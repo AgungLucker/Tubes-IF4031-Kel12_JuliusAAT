@@ -1,0 +1,76 @@
+services:
+  pvmbg-mock:
+    build: ./pvmbg
+    depends_on:
+      store-pvmbg:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    develop:
+      watch:
+        - path: ./pvmbg/src
+          action: sync
+          target: /usr/local/app/src
+        - path: ./pvmbg/package.json
+          action: rebuild
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_PVMBG_USER}:${POSTGRES_PVMBG_PASSWORD}@store-pvmbg:5432/${POSTGRES_PVMBG_DB}
+
+  bmkg-mock:
+    build: ./bmkg
+    depends_on:
+      store-bmkg:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    develop:
+      watch:
+        - path: ./bmkg/src
+          action: sync
+          target: /usr/local/app/src
+        - path: ./bmkg/package.json
+          action: rebuild
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_BMKG_USER}:${POSTGRES_BMKG_PASSWORD}@store-bmkg:5432/${POSTGRES_BMKG_DB}
+
+  store-pvmbg:
+    image: postgres:17
+    volumes:
+      - pvmbg-data:/var/lib/postgresql/data
+      - ./postgres/init-scripts/pvmbg:/docker-entrypoint-initdb.d:ro
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_PVMBG_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PVMBG_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_PVMBG_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-postgres}" -h localhost || exit 1' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  store-bmkg:
+    image: postgres:17
+    volumes:
+      - bmkg-data:/var/lib/postgresql/data
+      - ./postgres/init-scripts/bmkg:/docker-entrypoint-initdb.d:ro
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_BMKG_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_BMKG_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_BMKG_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-postgres}" -h localhost || exit 1' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+volumes:
+  pvmbg-data:
+  bmkg-data:
