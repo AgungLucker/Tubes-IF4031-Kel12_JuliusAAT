@@ -1,4 +1,14 @@
 services:
+  aggregator:
+    build: ./aggregator
+    depends_on:
+      store-aggregator:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+    - DATABASE_URL=postgresql://${POSTGRES_AGGREGATOR_USER}:${POSTGRES_AGGREGATOR_PASSWORD}@store-aggregator:5432/${POSTGRES_AGGREGATOR_DB}
+
   pvmbg-mock:
     build: ./pvmbg
     depends_on:
@@ -32,6 +42,25 @@ services:
           action: rebuild
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_BMKG_USER}:${POSTGRES_BMKG_PASSWORD}@store-bmkg:5432/${POSTGRES_BMKG_DB}
+
+  store-aggregator:
+    image: postgres:17
+    volumes:
+      - aggregator-data:/var/lib/postgresql/data
+      - ./postgres/init-scripts/aggregator:/docker-entrypoint-initdb.d:ro
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_AGGREGATOR_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_AGGREGATOR_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_AGGREGATOR_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-postgres}" -h localhost || exit 1' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   store-pvmbg:
     image: postgres:17
@@ -72,5 +101,6 @@ services:
       start_period: 60s
 
 volumes:
+  aggregator-data:
   pvmbg-data:
   bmkg-data:
