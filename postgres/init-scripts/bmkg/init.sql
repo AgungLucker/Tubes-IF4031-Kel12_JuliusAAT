@@ -105,6 +105,6 @@ INSERT INTO tsunami_warnings (
     ARRAY['Ende', 'Sikka', 'Flores Timur'],
     '2026-09-24 11:45:00+07'),
 
-('TW010', 'SE004', 'Waspada',
+('TW010', 'SE007', 'Waspada',
     ARRAY['Ambon', 'Seram', 'Buru'],
     '2026-09-11 22:00:00+07');
