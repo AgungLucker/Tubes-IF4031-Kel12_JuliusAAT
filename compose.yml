@@ -7,7 +7,14 @@ services:
     ports:
       - "8090:8090"
     environment:
-    - DATABASE_URL=postgresql://${POSTGRES_AGGREGATOR_USER}:${POSTGRES_AGGREGATOR_PASSWORD}@store-aggregator:5432/${POSTGRES_AGGREGATOR_DB}
+      - DATABASE_URL=postgresql://${POSTGRES_AGGREGATOR_USER}:${POSTGRES_AGGREGATOR_PASSWORD}@store-aggregator:5432/${POSTGRES_AGGREGATOR_DB}
+      - BMKG_API_KEY=${BMKG_API_KEY}
+      - PVMBG_TOKEN=${PVMBG_TOKEN}
+      - BMKG_BASE_URL=${BMKG_BASE_URL}
+      - PVMBG_BASE_URL=${PVMBG_BASE_URL}
+      - SOURCE_TIMEOUT_MS=${SOURCE_TIMEOUT_MS}
+      - POLL_INTERVAL_MS=${POLL_INTERVAL_MS}
+
 
   pvmbg-mock:
     build: ./pvmbg

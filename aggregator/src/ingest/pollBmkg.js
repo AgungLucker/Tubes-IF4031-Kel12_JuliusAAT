@@ -30,7 +30,11 @@ async function pollBmkg(since) {
         for (const event of events) {
             const related = tsunamiWarningByEvent[event.event_id] ?? [];
             const hazardEvent = mapSeismicEventToHazardEvent(event, related);
-            await upsertHazardEvent(hazardEvent);
+            const isNewEvent = await upsertHazardEvent(hazardEvent);
+
+            if (isNewEvent) {
+                // publish ke message broker
+            }
 
             if (event.occurred_at > latestCursor) {
                 latestCursor = event.occurred_at

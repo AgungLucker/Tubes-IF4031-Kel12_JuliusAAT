@@ -9,7 +9,12 @@ async function pollPvmbg(since) {
         let latestCursor = since;
         for (const volcanicReport of volcanicReports) {
             const hazardEvent = mapVolcanicReportToHazardEvent(volcanicReport);
-            await upsertHazardEvent(hazardEvent);
+            const isNewEvent = await upsertHazardEvent(hazardEvent);
+
+            if (isNewEvent) {
+                // publish ke message broker
+            }
+
 
             if (volcanicReport.reported_at > latestCursor) {
                 latestCursor = volcanicReport.reported_at;
