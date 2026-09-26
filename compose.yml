@@ -4,6 +4,13 @@ services:
     depends_on:
       store-aggregator:
         condition: service_healthy
+        develop:
+      watch:
+        - path: ./aggregator/src
+          action: sync
+          target: /usr/local/app/src
+        - path: ./aggregator/package.json
+          action: rebuild
     ports:
       - "8090:8090"
     environment:
