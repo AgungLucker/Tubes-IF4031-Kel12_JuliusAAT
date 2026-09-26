@@ -24,6 +24,9 @@ CREATE TABLE tsunami_warnings (
         CHECK (threat_level IN ('Waspada', 'Siaga', 'Awas'))
 );
 
+CREATE SEQUENCE seismic_events_seq START WITH 21;
+CREATE SEQUENCE tsunami_warnings_seq START WITH 11;
+
 INSERT INTO seismic_events (
     event_id,
     magnitude,

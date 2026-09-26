@@ -6,10 +6,6 @@ const { getConfidenceLevel } = require('./adminSchemaVersion');
 const router = express.Router();
 
 router.get('/', async (req, res) => {
-  if (getOutageStatus()) {
-    return res.status(503).json({ error: 'PVMBG service unavailable (outage)' });
-  }
-
   const since = req.query.since || new Date(0).toISOString();
 
   try {

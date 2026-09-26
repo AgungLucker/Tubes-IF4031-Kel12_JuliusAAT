@@ -32,6 +32,7 @@ services:
           action: rebuild
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_PVMBG_USER}:${POSTGRES_PVMBG_PASSWORD}@store-pvmbg:5432/${POSTGRES_PVMBG_DB}
+      - PVMBG_SECRET_KEY=${PVMBG_SECRET_KEY}
 
   bmkg-mock:
     build: ./bmkg
@@ -49,6 +50,7 @@ services:
           action: rebuild
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_BMKG_USER}:${POSTGRES_BMKG_PASSWORD}@store-bmkg:5432/${POSTGRES_BMKG_DB}
+      - BMKG_API_KEY=${BMKG_API_KEY}
 
   store-aggregator:
     image: postgres:17

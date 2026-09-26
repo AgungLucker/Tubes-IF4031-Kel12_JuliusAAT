@@ -4,6 +4,7 @@ const authenticateApiKey = require("./middleware/authenticateApiKey")
 const seismicEventsRouter = require("./routes/seismicEvents");
 const tsunamiWarningsRouter = require("./routes/tsunamiWarnings");
 const healthRouter = require("./routes/health");
+const scheduleSeeder = require('./seeders/seedingScheduler')
 
 const app = express();
 
@@ -18,3 +19,5 @@ const PORT = 8081;
 app.listen(PORT, () => {
     console.log(`BMKG service running on port ${PORT}`);
 });
+
+scheduleSeeder();
