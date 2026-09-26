@@ -1,8 +1,6 @@
 const jwt = require('jsonwebtoken');
 
 function authenticateToken(req, res, next) {
-    console.log("==========  DEBUG ==========");
-    console.log("========================================");
     const authHeader = req.headers['authorization'];
 
     if (!authHeader) {
@@ -13,14 +11,6 @@ function authenticateToken(req, res, next) {
     }
 
     const [scheme, token] = authHeader.split(' ');
-
-    console.log("========== AUTH HEADER DEBUG ==========");
-    console.log("Auth Header :", authHeader);
-    console.log("Scheme      :", scheme);
-    console.log("Token       :", token);
-    console.log("========================================");
-
-
     if (scheme !== 'Bearer' || !token) {
         console.log('Invalid Authorization header');
         return res.status(401).json({

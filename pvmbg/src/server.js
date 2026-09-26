@@ -13,14 +13,7 @@ const app = express();
 app.use(express.json());
 
 app.use("/health", isCurrentlyOutage, healthRouter);
-app.use("/volcanic-reports", (req, res, next) => {
-    console.log("🔥 REQUEST MASUK /volcanic-reports");
-    console.log("Method:", req.method);
-    console.log("URL:", req.originalUrl);
-    console.log("Authorization:", req.headers.authorization);
-
-    next();
-}, isCurrentlyOutage, authenticateToken, volcanicReportsRouter);
+app.use("/volcanic-reports", isCurrentlyOutage, authenticateToken, volcanicReportsRouter);
 app.use("/admin/schema-version", isCurrentlyOutage, authenticateToken, adminSchemaVersionRouter);
 app.use("/admin/outage", authenticateToken ,adminOutageRouter);
 
