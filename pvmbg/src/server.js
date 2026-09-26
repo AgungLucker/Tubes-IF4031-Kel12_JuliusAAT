@@ -7,15 +7,16 @@ const { router: adminOutageRouter } = require("./routes/adminOutage");
 const authenticateToken = require("./middleware/authenticateToken");
 const isCurrentlyOutage = require("./middleware/outage")
 const scheduleSeeder = require("./seeders/seedingSchedulers");
+const pvmbgDelay = require("./middleware/pvmbgDelay");
 
 const app = express();
 
 app.use(express.json());
 
-app.use("/health", isCurrentlyOutage, healthRouter);
-app.use("/volcanic-reports", isCurrentlyOutage, authenticateToken, volcanicReportsRouter);
-app.use("/admin/schema-version", isCurrentlyOutage, authenticateToken, adminSchemaVersionRouter);
-app.use("/admin/outage", authenticateToken ,adminOutageRouter);
+app.use("/health", isCurrentlyOutage, pvmbgDelay, healthRouter);
+app.use("/volcanic-reports", isCurrentlyOutage, pvmbgDelay, authenticateToken, volcanicReportsRouter);
+app.use("/admin/schema-version", isCurrentlyOutage, pvmbgDelay, authenticateToken, adminSchemaVersionRouter);
+app.use("/admin/outage", pvmbgDelay, authenticateToken ,adminOutageRouter);
 
 const PORT = process.env.PORT || 8082;
 
