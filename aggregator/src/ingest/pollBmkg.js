@@ -4,15 +4,10 @@ const { upsertHazardEvent, markPollSuccess, markPollError } = require("../store/
 
 
 // mapping tsunami warning dengan event seismic nya
-function groupTsunamiWarningsByEventId(tsunamiWarnings) {
+function mapTsunamiWarningByEventId(tsunamiWarnings) {
     const map = {};
     for (const tsunamiWarning of tsunamiWarnings) {
-        const eventId = tsunamiWarning.related_event_id;
-        if (!map[eventId]) {
-            map[eventId] = [];
-        }
-
-        map[eventId].push(tsunamiWarning);
+        map[tsunamiWarning.related_event_id] = tsunamiWarning
     }
     return map;
 }
@@ -24,11 +19,11 @@ async function pollBmkg(since) {
             getTsunamiWarnings(since)
         ]);
 
-        const tsunamiWarningByEvent = groupTsunamiWarningsByEventId(tsunamiWarnings);
+        const tsunamiWarningByEvent = mapTsunamiWarningByEventId(tsunamiWarnings);
 
         let latestCursor = since;
         for (const event of events) {
-            const related = tsunamiWarningByEvent[event.event_id] ?? [];
+            const relatedWarning = tsunamiWarningByEvent[event.event_id];
             const hazardEvent = mapSeismicEventToHazardEvent(event, related);
             const isNewEvent = await upsertHazardEvent(hazardEvent);
 

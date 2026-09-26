@@ -1,17 +1,4 @@
 const THREAT_LEVEL_TO_SEVERITY = { Waspada: "WASPADA", Siaga: "SIAGA", Awas: "AWAS" };
-const SEVERITY_RANK = { WASPADA: 1, SIAGA: 2, AWAS: 3 };
-
-// asumsi satu seismic events -> multiple tsunami events
-function computeSeverityFromTsunamiWarnings(tsunamiWarnings) {
-    let best = null;
-    for (const tsunamiWarning of tsunamiWarnings) {
-        const severity = THREAT_LEVEL_TO_SEVERITY[tsunamiWarning.threat_level];
-        if (!best || SEVERITY_RANK[severity] > SEVERITY_RANK[best]) {
-            best = severity;
-        }
-    }
-    return best;
-}
 
 function computeSeverityFromMagnitude(magnitude) {
     if (magnitude >= 6.5) return "SIAGA";
@@ -19,7 +6,7 @@ function computeSeverityFromMagnitude(magnitude) {
     return "NORMAL";
 }
 
-function mapSeismicEventToHazardEvent(seismicEvent, relatedTsunamiWarnings = []) {
+function mapSeismicEventToHazardEvent(seismicEvent, relatedTsunamiWarning) {
     const {
         event_id, magnitude, depth_km,
         epicenter_lat, epicenter_lon,
@@ -27,8 +14,8 @@ function mapSeismicEventToHazardEvent(seismicEvent, relatedTsunamiWarnings = [])
         ...restFields
     } = seismicEvent;
 
-    const severity = relatedTsunamiWarnings.length > 0
-        ? computeSeverityFromTsunamiWarnings(relatedTsunamiWarnings)
+    const severity = relatedTsunamiWarning
+        ? THREAT_LEVEL_TO_SEVERITY[relatedTsunamiWarning.threat_level]
         : computeSeverityFromMagnitude(magnitude);
 
     return {
@@ -47,7 +34,7 @@ function mapSeismicEventToHazardEvent(seismicEvent, relatedTsunamiWarnings = [])
             depth_km,
             potential_tsunami,
             ...restFields,
-            ...(relatedTsunamiWarnings.length > 0 ? { tsunami_warnings: relatedTsunamiWarnings } : {})
+            ...(relatedTsunamiWarning ? { tsunami_warning: relatedTsunamiWarning } : {})
         }
     };
 }
