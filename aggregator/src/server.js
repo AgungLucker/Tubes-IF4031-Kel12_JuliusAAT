@@ -1,4 +1,5 @@
 const express = require("express");
+const rateLimit = require("express-rate-limit");
 
 const healthRouter = require("./routes/health");
 const hazardEventsRouter = require("./routes/hazardEvents")
@@ -8,8 +9,16 @@ const app = express();
 
 app.use(express.json());
 
-app.use("/health", healthRouter);
-app.use("/hazard-events", hazardEventsRouter)
+app.use("/health", healthRouter)
+
+const limiter = rateLimit({
+    windowMs: 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests" }
+});
+app.use("/hazard-events", limiter, hazardEventsRouter)
 
 const PORT = process.env.PORT || 8090;
 
