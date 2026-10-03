@@ -4,7 +4,7 @@ services:
     depends_on:
       store-aggregator:
         condition: service_healthy
-        develop:
+    develop:
       watch:
         - path: ./aggregator/src
           action: sync
@@ -12,7 +12,7 @@ services:
         - path: ./aggregator/package.json
           action: rebuild
     ports:
-      - "8090:8090"
+      - "8091:8090"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_AGGREGATOR_USER}:${POSTGRES_AGGREGATOR_PASSWORD}@store-aggregator:5432/${POSTGRES_AGGREGATOR_DB}
       - BMKG_API_KEY=${BMKG_API_KEY}
@@ -118,7 +118,67 @@ services:
       retries: 5
       start_period: 60s
 
+  token-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: ${TOKEN_DB_PASSWORD}
+      POSTGRES_DB: auth
+    volumes:
+      - token-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
+      interval: 3s
+      retries: 10
+
+  bnpb-token-service:
+    build: ./bnpb-token
+    depends_on:
+      token-db:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+      - PORT=8090
+      - DATABASE_URL=postgres://auth:${TOKEN_DB_PASSWORD}@token-db:5432/auth
+      - JWT_PRIVATE_KEY_FILE=/app/keys/private.pem
+      - JWT_PUBLIC_KEY_FILE=/app/keys/public.pem
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - ACCESS_TOKEN_TTL_SECONDS=${ACCESS_TOKEN_TTL_SECONDS}
+      - REFRESH_TOKEN_TTL_SECONDS=${REFRESH_TOKEN_TTL_SECONDS}
+      - INTROSPECT_SERVICE_KEY=${INTROSPECT_SERVICE_KEY}
+      - MEDIA_CLIENT_ID=${MEDIA_CLIENT_ID}
+      - MEDIA_CLIENT_SECRET=${MEDIA_CLIENT_SECRET}
+      - LAPANGAN_CLIENT_ID=${LAPANGAN_CLIENT_ID}
+      - LAPANGAN_CLIENT_SECRET=${LAPANGAN_CLIENT_SECRET}
+      - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
+      - INTERNAL_CLIENT_SECRET=${INTERNAL_CLIENT_SECRET}
+    volumes:
+      - ./bnpb-token/keys:/app/keys:ro
+
+  client-service:
+    build: ./client-service
+    depends_on:
+      - bnpb-token-service
+      - aggregator
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - JWT_PUBLIC_KEY_FILE=/app/keys/public.pem
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_AUDIENCE=${JWT_AUDIENCE}
+      - TOKEN_SERVICE_URL=http://bnpb-token-service:8090
+      - INTROSPECT_SERVICE_KEY=${INTROSPECT_SERVICE_KEY}
+      - AGGREGATOR_URL=http://aggregator:8090
+      - UPSTREAM_TIMEOUT_MS=3000
+    volumes:
+      - ./bnpb-token/keys/public.pem:/app/keys/public.pem:ro
+
+
 volumes:
   aggregator-data:
   pvmbg-data:
   bmkg-data:
+  token-db-data:
