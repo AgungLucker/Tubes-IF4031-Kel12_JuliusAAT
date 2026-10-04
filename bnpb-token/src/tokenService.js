@@ -128,9 +128,9 @@ export async function createTokenService({pool, cfg: config, keys}) {
         if (!s || s.revoked || s.current_jti !== jti) return { active: false };
         
         return {
-            active: true, sub: payload.sub, scope: payload.scope,
-            sid: sid, jti: jti, exp: payload.exp,
-        }
+            active: true, sub: s.client_id, scope: s.scope,
+            sid, jti,
+        };
     }
 
     

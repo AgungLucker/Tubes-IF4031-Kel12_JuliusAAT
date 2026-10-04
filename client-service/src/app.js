@@ -1,10 +1,12 @@
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { createAuth } from './auth.js';
+// import { createAuth } from './auth.js';
 import { resolveFields, project } from './allowList.js';
 import { HttpError } from './error.js';
 import { callJson } from './http.js';
 import { log } from './logger.js';
+// import rateLimit from 'express-rate-limit';
+import {verifyJwt, checkSession} from './auth.js';
 
 const HAZARD_TYPES = new Set(['SEISMIC', 'VOLCANIC']);
 
@@ -29,7 +31,7 @@ export function createApp({cfg, keys}) {
 
     app.get('/health', (req, res) => res.json({ status: 'ok', service: 'client-service' }));
 
-    app.get('/data', createAuth(cfg), async (req, res) => {
+    app.get('/data', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
         const fields = resolveFields(req.auth.scope, req.query.fields);
         const {hazard_type} = req.query;
         
