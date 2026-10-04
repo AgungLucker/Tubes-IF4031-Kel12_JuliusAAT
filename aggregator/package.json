@@ -6,6 +6,7 @@
         "start": "node src/server.js"
     },
     "dependencies": {
+        "amqplib": "^2.2.0",
         "express": "^5.2.1",
         "express-rate-limit": "^8.7.0",
         "pg": "^8.23.0"

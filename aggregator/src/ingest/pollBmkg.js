@@ -1,6 +1,8 @@
 const { getSeismicEvents, getTsunamiWarnings } = require("../sources/bmkgClient");
 const { mapSeismicEventToHazardEvent } = require("../mappers/seismicMapper");
 const { upsertHazardEvent, markPollSuccess, markPollError } = require("../store/canonicalStore");
+const { publishHazardEvent } = require("../broker/publisher");
+
 
 
 // mapping tsunami warning dengan event seismic nya
@@ -24,11 +26,12 @@ async function pollBmkg(since) {
         let latestCursor = since;
         for (const event of events) {
             const relatedWarning = tsunamiWarningByEvent[event.event_id];
-            const hazardEvent = mapSeismicEventToHazardEvent(event, related);
+            const hazardEvent = mapSeismicEventToHazardEvent(event, relatedWarning);
             const isNewEvent = await upsertHazardEvent(hazardEvent);
 
             if (isNewEvent) {
                 // publish ke message broker
+                publishHazardEvent(hazardEvent);
             }
 
             if (event.occurred_at > latestCursor) {
