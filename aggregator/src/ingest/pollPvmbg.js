@@ -1,6 +1,9 @@
 const { getVolcanicReports } = require("../sources/pvmbgClient");
 const { mapVolcanicReportToHazardEvent } = require("../mappers/volcanicMapper");
 const { upsertHazardEvent, markPollSuccess, markPollError } = require("../store/canonicalStore");
+const { publishHazardEvent } = require("../broker/publisher");
+
+
 
 async function pollPvmbg(since) {
     try {
@@ -13,6 +16,7 @@ async function pollPvmbg(since) {
 
             if (isNewEvent) {
                 // publish ke message broker
+                publishHazardEvent(hazardEvent);
             }
 
 

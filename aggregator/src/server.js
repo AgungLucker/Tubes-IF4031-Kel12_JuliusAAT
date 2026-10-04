@@ -4,6 +4,9 @@ const rateLimit = require("express-rate-limit");
 const healthRouter = require("./routes/health");
 const hazardEventsRouter = require("./routes/hazardEvents")
 const { startPoller } = require("./ingest/poller");
+const { startPublisher } = require("./broker/publisher");
+
+startPublisher();
 
 const app = express();
 
