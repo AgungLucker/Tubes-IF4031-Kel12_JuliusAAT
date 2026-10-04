@@ -1,4 +1,3 @@
-// logger.js
 const base = (level) => (o) =>
   console.log(JSON.stringify({ ts: new Date().toISOString(), level, service: 'client-service', ...o }));
 

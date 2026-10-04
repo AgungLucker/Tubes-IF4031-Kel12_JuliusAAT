@@ -1,4 +1,4 @@
-import { log } from './logger.js';
+import {log} from './logger.js';
 
 export async function callJson(name, url, { cid, timeoutMs, method = 'GET', headers, body } = {}) {
   const start = Date.now();
