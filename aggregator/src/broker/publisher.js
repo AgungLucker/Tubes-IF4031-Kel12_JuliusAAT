@@ -15,7 +15,7 @@ function retryConnect() {
 
 async function startPublisher() {
     try {
-        const conn = await amqp.connect(proccess.env.RABBITMQ_URL);
+        const conn = await amqp.connect(process.env.RABBITMQ_URL);
         conn.on('error', (err) => {
             console.error("Connection error:", err);
         });
@@ -34,7 +34,7 @@ async function startPublisher() {
     }
 }
 
-async function publishEvent(event) {
+async function publishHazardEvent(event) {
     if (!channel) {
         console.error("Channel is not initialized. Cannot publish event.");
         return;
@@ -44,12 +44,12 @@ async function publishEvent(event) {
     channel.publish(
         EXCHANGE_NAME,
         key,
-        buffer.from(JSON.stringify(event)),
+        Buffer.from(JSON.stringify(event)),
         {
             persistent: true,
             messageId: randomUUID(),
             contentType: 'application/json',
-            header: {
+            headers: {
                 correlation_id: randomUUID()
             }
         },
@@ -65,5 +65,5 @@ async function publishEvent(event) {
 
 module.exports = {
     startPublisher,
-    publishEvent
+    publishHazardEvent
 };
