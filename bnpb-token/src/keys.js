@@ -5,5 +5,5 @@ export function loadKeys(cfg) {
   return {
     privateKey: createPrivateKey(fs.readFileSync(cfg.privateKeyFile)),
     publicKey: createPublicKey(fs.readFileSync(cfg.publicKeyFile)),
-  };
+  };    
 }
