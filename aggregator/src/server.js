@@ -23,7 +23,7 @@ app.use((req, res, next) => {
             event: "request",
             correlation_id: req.cid,
             method: req.method,
-            path: req.path,
+            path: req.originalUrl,
             status: res.statusCode,
             latency_ms: Number(process.hrtime.bigint() - start) / 1e6,
         });
