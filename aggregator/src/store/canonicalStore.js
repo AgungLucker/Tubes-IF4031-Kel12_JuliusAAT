@@ -25,7 +25,7 @@ async function upsertHazardEvent(event) {
     return result.rows[0].inserted; // return boolean -> true = record baru, false = record lama di-update
 }
 
-async function listHazardEvents({ since, hazardType, severity } = {}) {
+async function listHazardEvents({ since, hazardType, severity, limit = 100 } = {}) {
     const conditions = [];
     const params = [];
 
@@ -43,13 +43,15 @@ async function listHazardEvents({ since, hazardType, severity } = {}) {
     }
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+    params.push(limit);
 
     const result = await pool.query(
-        `SELECT * FROM hazard_events ${whereClause} ORDER BY occurred_at ASC`,
+        `SELECT * FROM hazard_events ${whereClause}
+     ORDER BY occurred_at DESC LIMIT $${params.length}`,
         params
     );
 
-    return result.rows;
+    return result.rows.reverse();
 }
 
 async function markPollSuccess(source, cursor) {

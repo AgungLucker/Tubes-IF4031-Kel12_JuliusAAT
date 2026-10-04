@@ -8,7 +8,8 @@ const STALE_THRESHOLD_MS = Number(process.env.POLL_INTERVAL_MS || 3000) * 2;
 router.get("/", async (req, res) => {
     try {
         const { hazard_type: hazardType } = req.query;
-        const data = await listHazardEvents({ hazardType });
+        const limit = Math.min(Math.max(Number(req.query.limit) || 100, 1), 500);
+        const data = await listHazardEvents({ hazardType, limit });
         const response = { data };
 
         // asumsi client bisa request semua atau spesifik hazardType event
