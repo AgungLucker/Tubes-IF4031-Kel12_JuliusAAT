@@ -46,9 +46,9 @@ export function createApp({cfg, keys, tokens}){
     app.post('/auth/introspect', wrap(async (req, res) => {
         if ((req.get('X-Service-Key') != '') && (req.get('X-Service-Key') !== cfg.introspectServiceKey))
             throw new AuthError(401, 'unauthorized', 'Invalid service key');
-        const { token } = req.body || {};
-        if (!isStr(token)) throw new AuthError(400, 'invalid_request', 'token is required');
-        res.json(await tokens.introspect(token));
+        const { sid, jti } = req.body || {};
+        if (!isStr(sid) || !isStr(jti)) throw new AuthError(400, 'invalid_request', 'sid and jti are required');
+        res.json(await tokens.introspect({ sid, jti }));
     }));
 
     app.use((err, req, res, next) => {

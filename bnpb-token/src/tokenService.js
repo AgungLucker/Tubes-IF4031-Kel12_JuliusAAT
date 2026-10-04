@@ -113,23 +113,23 @@ export async function createTokenService({pool, cfg: config, keys}) {
         return tokenResponse(token, newRefresh, session.scope);
     }
 
-    async function introspect(token) {
-        let payload;
-        try{
-            ({ payload } = await jwtVerify(token, keys.publicKey, {
-                issuer: config.issuer, audience: config.audience, algorithms: ['ES256'],
-            }));
-        }catch{
-            return {active: false};
-        }
+    async function introspect({sid, jti}) {
+        // let payload;
+        // try{
+        //     ({ payload } = await jwtVerify(token, keys.publicKey, {
+        //         issuer: config.issuer, audience: config.audience, algorithms: ['ES256'],
+        //     }));
+        // }catch{
+        //     return {active: false};
+        // }
 
-        const { rows: [s] } = await pool.query('SELECT * FROM sessions WHERE sid = $1', [payload.sid]);
+        const { rows: [s] } = await pool.query('SELECT * FROM sessions WHERE sid = $1', [sid]);
 
-        if (!s || s.revoked || s.current_jti !== payload.jti) return { active: false };
+        if (!s || s.revoked || s.current_jti !== jti) return { active: false };
         
         return {
             active: true, sub: payload.sub, scope: payload.scope,
-            sid: payload.sid, jti: payload.jti, exp: payload.exp,
+            sid: sid, jti: jti, exp: payload.exp,
         }
     }
 
