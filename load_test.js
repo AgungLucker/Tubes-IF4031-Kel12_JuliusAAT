@@ -9,16 +9,6 @@ const TOKEN_URL = __ENV.TOKEN_URL || 'http://localhost:8090';
 const CLIENT_ID = __ENV.MEDIA_CLIENT_ID;
 const CLIENT_SECRET = __ENV.MEDIA_CLIENT_SECRET;
 
-export function setup() {
-  const r = http.post(`${TOKEN_URL}/auth/token`,
-    JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET }),
-    { headers: { 'content-type': 'application/json' } });
-  if (r.status !== 200) throw new Error(`login failed ${r.status} ${r.body}`);
-  const d = r.json();
-  console.log(`LOGIN ok scope=${d.scope} ttl=${d.expires_in}s`);
-  return { access: d.access_token };         
-}
-
 export const options = {
   scenarios: {
     seismic:  { executor: 'constant-vus', vus: 25, duration: '60s', exec: 'seismic'  },
@@ -31,15 +21,55 @@ export const options = {
   summaryTrendStats: ['avg','med','p(95)','p(99)','max'],
 };
 
-function hit(path, endpoint, access) {
-  const r = http.get(`${BASE}${path}`, {
-    headers: { Authorization: `Bearer ${access}` },
+
+const HEADERS = { 'content-type': 'application/json' };
+let session = null;            
+
+function store(d) {
+  session = {
+    access: d.access_token,
+    refresh: d.refresh_token,
+  };
+}
+
+function login() {
+  const r = http.post(`${TOKEN_URL}/auth/token`,
+    JSON.stringify({ client_id: CLIENT_ID, client_secret: CLIENT_SECRET }),
+    { headers: HEADERS, tags: { endpoint: 'auth' } });
+  if (r.status !== 200) return false;
+  store(r.json());
+  return true;
+}
+
+function refresh() {
+  const r = http.post(`${TOKEN_URL}/auth/refresh`,
+    JSON.stringify({ refresh_token: session.refresh }),
+    { headers: HEADERS, tags: { endpoint: 'auth' } });
+  if (r.status !== 200) return login();      
+  store(r.json());
+  return true;
+}
+
+function get(path, endpoint) {
+  return http.get(`${BASE}${path}`, {
+    headers: { Authorization: `Bearer ${session.access}` },
     tags: { endpoint },
   });
+}
+
+function hit(path, endpoint) {
+  if (!session && !login()) {
+    check(null, { 'not a real error': () => false }, { type: 'real_error' });
+    return;
+  }
+
+  let r = get(path, endpoint);
+  if (r.status === 401) { refresh(); r = get(path, endpoint); }   // safety net
+
   if (r.status === 429) rejected429.add(1);
   check(r, { 'not a real error': (x) => x.status === 200 || x.status === 429 },
         { type: 'real_error' });
 }
 
-export function seismic(data)  { hit('/data?hazard_type=SEISMIC',  'seismic',  data.access); }
-export function volcanic(data) { hit('/data?hazard_type=VOLCANIC', 'volcanic', data.access); }
+export function seismic()  { hit('/data?hazard_type=SEISMIC',  'seismic'); }
+export function volcanic() { hit('/data?hazard_type=VOLCANIC', 'volcanic'); }
