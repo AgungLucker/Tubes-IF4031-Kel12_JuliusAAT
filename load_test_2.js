@@ -1,3 +1,27 @@
+import http from 'k6/http';
+import { check } from 'k6';
+import { Counter } from 'k6/metrics';
+
+const rejected429 = new Counter('rejected_429');
+
+const BASE = __ENV.BASE || 'http://localhost:8080'
+const TOKEN_URL = __ENV.TOKEN_URL || 'http://localhost:8090';  
+const CLIENT_ID = __ENV.MEDIA_CLIENT_ID;
+const CLIENT_SECRET = __ENV.MEDIA_CLIENT_SECRET;
+
+export const options = {
+  scenarios: {
+    seismic:  { executor: 'constant-vus', vus: 25, duration: '60s', exec: 'seismic'  },
+    volcanic: { executor: 'constant-vus', vus: 25, duration: '60s', exec: 'volcanic' },
+  },
+  thresholds: {
+    'http_req_duration{endpoint:seismic}': ['p(95)<300'],      // kriteria 1
+    'checks{type:real_error}': ['rate>0.99'],                  // kriteria 2 (error < 1%)
+  },
+  summaryTrendStats: ['avg','med','p(95)','p(99)','max'],
+};
+
+
 const HEADERS = { 'content-type': 'application/json' };
 let session = null;            // per VU: { access, refresh, expiresAt }
 
