@@ -11,8 +11,6 @@ services:
           target: /usr/local/app/src
         - path: ./aggregator/package.json
           action: rebuild
-    ports:
-      - "8091:8090"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_AGGREGATOR_USER}:${POSTGRES_AGGREGATOR_PASSWORD}@store-aggregator:5432/${POSTGRES_AGGREGATOR_DB}
       - BMKG_API_KEY=${BMKG_API_KEY}

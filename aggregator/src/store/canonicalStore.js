@@ -47,7 +47,7 @@ async function listHazardEvents({ since, hazardType, severity, limit = 100 } = {
 
     const result = await pool.query(
         `SELECT * FROM hazard_events ${whereClause}
-     ORDER BY occurred_at DESC LIMIT $${params.length}`,
+        ORDER BY occurred_at DESC LIMIT $${params.length}`,
         params
     );
 
