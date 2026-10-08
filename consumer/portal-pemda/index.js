@@ -2,7 +2,7 @@ const amqp = require("amqplib");
 const http = require("http");
 
 const EXCHANGE = "hazard.events";
-const QUEUE = "dashboard-updater";
+const QUEUE = "porta-pemda";
 const state = new Map();
 
 const log = (o) => console.log(JSON.stringify({ ts: new Date().toISOString(), service: QUEUE, ...o }));
@@ -40,7 +40,7 @@ http.createServer((req, res) => {
     if (req.url === "/health") return res.end(JSON.stringify({ status: "ok", service: QUEUE }));
     if (req.url === "/state") return res.end(JSON.stringify({ count: state.size, events: [...state.values()] }));
     res.statusCode = 404; res.end("{}");
-}).listen(process.env.PORT || 8101);
+}).listen(process.env.PORT || 8103);
 
 
 startConsumer().catch((e) => { log({ event: "startup_failed", message: e.message }); process.exit(1); });
