@@ -220,6 +220,18 @@ services:
       - BINDINGS=hazard.*.siaga,hazard.*.awas
       - NOTIFY_DELAY_MS=0
 
+  consumer-portal-pemda:
+    build: ./consumer/portal-pemda
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8103:8103"
+    environment:
+      - PORT=8103
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+
 
 volumes:
   aggregator-data:
