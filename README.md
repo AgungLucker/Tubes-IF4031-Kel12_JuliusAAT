@@ -196,7 +196,7 @@ docker compose logs aggregator --since 15m | grep '"path":"/hazard-events'
 ```bash
 docker compose logs aggregator --since 2m | tail -n 40
 ```
-9. Matikan outage pada PVMBG, kemudian ulangi langkah 4. stale_since secara ekspektasi akan hilang atau mengembalikan hasil data vulkanik secara normal
+8. Matikan outage pada PVMBG, kemudian ulangi langkah 4. stale_since secara ekspektasi akan hilang atau mengembalikan hasil data vulkanik secara normal
 ```bash
 curl -i -X POST http://localhost:8082/admin/outage -H "Authorization: Bearer $PVMBG_TOKEN" \
   -H "Content-Type: application/json" -d '{"outage": false}'
