@@ -11,12 +11,12 @@ Tugas Besar ini mengimplementasikan platform koordinasi kebencanaan yang menjemb
 - **PVMBG Mock Service**, sumber data untuk event gunung api (VolcanicReport), dengan response time lebih tinggi dan fluktuatif (delay acak 500 ms–3 detik yang dapat dikonfigurasi) untuk mensimulasikan infrastruktur lawas, serta mendukung outage instan dan perubahan skema saat runtime. `GET /volcanic-reports`, `GET /health`, `POST /admin/schema-version`, `POST /admin/outage`.
 
 **Komponen BNPB**
-- **Gateway / Aggregator**, Melakukan polling berkala ke BMKG dan PVMBG, memetakan data ke format kanonik HazardEvent kemudian menyimpannya ke Canonical Store, menyediakan endpoint bagi Client Service untuk pengambilan data HazardEvent, dan mempublikasikan event ke message broker.
+- **Gateway / Aggregator**, Melakukan polling berkala ke BMKG dan PVMBG, memetakan data ke format kanonik HazardEvent kemudian menyimpannya ke Canonical Store, menyediakan endpoint bagi Client Service untuk pengambilan data HazardEvent, dan mempublikasikan setiap event (hazardEvent) yang baru ke message broker.
 - **Canonical Store**, tempat penyimpanan `HazardEvent`, hanya dapat diakses langsung oleh Aggregator. Pada Canonical store, untuk menyimpan atribut dinamis digunakan atribut dengan kolom bertipe JSONB dari PostgreSQL sehingga field baru dari sumber data dapat langsung tertampung tanpa migrasi skema pada database.
 - **Client Service (Client-Facing API)**, gateway bagi client downstream (Media/Pers, Tim Lapangan, BNPB Pusat) untuk mengakses data lewat Aggregator, dengan pembatasan field sesuai scope masing-masing.
-- **BNPB Token Service (Auth Token Service)**, men-generate dan memperbarui (refresh) access token (JWT) serta refresh token untuk client downstream, dan menyediakan endpoint introspeksi sesi.
-- **Message Broker**, menyalurkan `HazardEvent` dari Aggregator ke multi consumer tanpa producer mengetahui siapa consumer-nya.
-- **Consumer**, services yang subscribe `HazardEvent` dari broker, terdiri dari dashboard updater dan notifier.
+- **BNPB Token Service (Auth Token Service)**, men-generate dan memperbaruiaccess token (JWT) serta refresh token untuk client downstream, dan menyediakan endpoint introspeksi sesi.
+- **Message Broker**, perantara yang menyalurkan `HazardEvent` dari Aggregator sebagai producer ke consumers tanpa producer mengetahui siapa consumer-nya.
+- **Consumer**, services yang subscribing untuk menerima `HazardEvent`secara otomatis dari messasge broker, terdiri dari dashboard updater dan notifier.
 
 ## Tech Stack
 - **Backend**: Node.js, Express (express-rate-limit for rate limiter)
