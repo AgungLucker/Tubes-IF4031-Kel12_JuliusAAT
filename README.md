@@ -44,17 +44,22 @@ Tugas Besar ini mengimplementasikan platform koordinasi kebencanaan yang menjemb
    cp .env.example .env
    ```
 
-3. Jalankan seluruh sistem dengan perintah berikut:
+3. Jalankan script untuk menciptakan private dan public key
+   ```bash
+   node .\bnpb-token\script\gen-keys.js
+   ```
+
+5. Jalankan seluruh sistem dengan perintah berikut:
    ```bash
    docker compose up --build -d
    ```
 
-4. Verifikasi seluruh services yang dijalankan:
+6. Verifikasi seluruh services yang dijalankan:
    ```bash
    docker compose ps
    ```
 
-5. Titik akses utama setelah sistem menyala:
+7. Titik akses utama setelah sistem menyala:
 
    | Service | Port | Keterangan |
    |---|---|---|
