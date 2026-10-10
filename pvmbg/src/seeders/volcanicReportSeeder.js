@@ -1,6 +1,9 @@
 const pool = require("../db/connection");
+const { getConfidenceLevel } = require('../routes/adminSchemaVersion');
 
 async function seedVolcanicReport() {
+    const isConfidenceEnabled = getConfidenceLevel();
+
     await pool.query(`
         INSERT INTO volcanic_reports (
             report_id,
@@ -23,11 +26,15 @@ async function seedVolcanicReport() {
                 WHEN alert_level = 'Awas' THEN FLOOR(RANDOM() * 4001 + 1000)::INT
             END,
             NOW(),
-            ROUND((RANDOM() * 0.15 + 0.85)::numeric, 2)
+            CASE
+                WHEN $1::BOOLEAN = TRUE
+                    THEN ROUND((RANDOM() * 0.15 + 0.85)::NUMERIC, 2)
+                ELSE NULL
+            END
         FROM (
             SELECT (ARRAY['Normal', 'Waspada', 'Siaga', 'Awas'])[FLOOR(RANDOM() * 4 + 1)::INT] AS alert_level
         ) AS generated;
-    `);
+    `, [isConfidenceEnabled]);
     console.log("Volcanic report seeded");
 
 }

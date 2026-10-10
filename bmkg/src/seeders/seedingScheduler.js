@@ -1,7 +1,7 @@
 const seedSeismicEvent = require("./seismicEventSeeder");
 
 function scheduleSeeder() {
-    const delay = (Math.floor(Math.random() * 15) + 1) * 1000;
+    const delay = (Math.floor(Math.random() * 9) + 1) * 1000;
 
     setTimeout(async () => {
         try {
