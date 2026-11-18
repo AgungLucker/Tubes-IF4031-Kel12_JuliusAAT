@@ -6,6 +6,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY src ./src
+COPY migrations ./migrations
+COPY scripts ./scripts
 EXPOSE 8090
 
 HEALTHCHECK --interval=10s --timeout=3s --retries=5 \
