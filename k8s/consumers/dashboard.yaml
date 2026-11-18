@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: consumer-dashboard
-          image: consumer-dashboard:dev
+          image: bnpb-dashboard:dev
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8101

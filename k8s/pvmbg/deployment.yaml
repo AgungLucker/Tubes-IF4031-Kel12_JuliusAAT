@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: pvmbg-mock
-          image: pvmbg-mock:dev
+          image: bnpb-pvmbg:dev
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8082
