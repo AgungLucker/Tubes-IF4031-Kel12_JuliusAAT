@@ -43,6 +43,15 @@ http.createServer((req, res) => {
 }).listen(process.env.PORT || 8101);
 
 
-startConsumer().catch((e) => { log({ event: "startup_failed", message: e.message }); process.exit(1); });
+async function runWithRetry() {
+    try {
+        await startConsumer();
+    } catch (e) {
+        log({ event: "startup_failed", message: e.message });
+        setTimeout(runWithRetry, 5000);
+    }
+}
+
+runWithRetry();
 
 

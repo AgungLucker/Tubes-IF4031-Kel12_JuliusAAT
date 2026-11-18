@@ -32,6 +32,16 @@ spec:
           image: postgres:16-alpine
           ports:
             - containerPort: 5432
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "auth", "-d", "auth"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "auth", "-d", "auth"]
+            periodSeconds: 5
           env:
             - name: POSTGRES_USER
               valueFrom:

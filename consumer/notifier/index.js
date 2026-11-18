@@ -46,4 +46,13 @@ http.createServer((req, res) => {
     res.statusCode = 404; res.end("{}");
 }).listen(process.env.PORT || 8102);
 
-start().catch((e) => { log({ event: "startup_failed", message: e.message }); process.exit(1); });
+async function runWithRetry() {
+    try {
+        await start();
+    } catch (e) {
+        log({ event: "startup_failed", message: e.message });
+        setTimeout(runWithRetry, 5000);
+    }
+}
+
+runWithRetry();
