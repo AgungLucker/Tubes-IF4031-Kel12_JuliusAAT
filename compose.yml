@@ -61,6 +61,30 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_BMKG_USER}:${POSTGRES_BMKG_PASSWORD}@store-bmkg:5432/${POSTGRES_BMKG_DB}
       - BMKG_API_KEY=${BMKG_API_KEY}
+    
+  satellite-processor:
+    build: ./satellite-processor
+    networks: [app_net, satellite_store_net]
+    restart: unless-stopped
+    depends_on:
+      store-satellite:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    develop:
+      watch:
+        - path: ./satellite-processor/src
+          action: sync
+          target: /usr/local/app/src
+        - path: ./satellite-processor/package.json
+          action: rebuild
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_SATELLITE_USER}:${POSTGRES_SATELLITE_PASSWORD}@store-satellite:5432/${POSTGRES_SATELLITE_DB}
+      - SATELLITE_FEED_URL=${SATELLITE_FEED_URL}
+      - SATELLITE_FEED_TOKEN=${SATELLITE_FEED_TOKEN}
+      - SATELLITE_PROCESSOR_API_KEY=${SATELLITE_PROCESSOR_API_KEY}
+      - LATENESS_LIMIT_MIN=${LATENESS_LIMIT_MIN}
+
 
   store-aggregator:
     image: postgres:17
@@ -129,6 +153,24 @@ services:
       test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
       interval: 3s
       retries: 10
+  
+  store-satellite:
+    image: postgres:17
+    networks: [satellite_store_net]
+    volumes:
+      - satellite-data:/var/lib/postgresql/data
+      - ./postgres/init-scripts/satellite-processor:/docker-entrypoint-initdb.d:ro
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_SATELLITE_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_SATELLITE_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_SATELLITE_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-postgres}" -h localhost || exit 1' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   bnpb-token-service:
     build: ./bnpb-token
@@ -228,6 +270,7 @@ volumes:
   pvmbg-data:
   bmkg-data:
   token-db-data:
+  satellite-data:
 
 networks:
   app_net:
@@ -238,4 +281,6 @@ networks:
   bmkg_store_net:
     internal: true
   token_store_net:
+    internal: true
+  satellite_store_net:
     internal: true
