@@ -13,13 +13,6 @@ spec:
       labels:
         app: client-service
     spec:
-      initContainers:
-        - name: wait-for-token-service
-          image: node:22-alpine
-          command:
-            - sh
-            - -c
-            - until node -e "fetch('http://bnpb-token-service:8090/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"; do sleep 2; done
       containers:
         - name: client-service
           image: bnpb-client:dev

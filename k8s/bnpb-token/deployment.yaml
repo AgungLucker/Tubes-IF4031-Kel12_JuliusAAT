@@ -13,13 +13,6 @@ spec:
       labels:
         app: bnpb-token-service
     spec:
-      initContainers:
-        - name: wait-for-token-db
-          image: postgres:16-alpine
-          command:
-            - sh
-            - -c
-            - until pg_isready -h token-db -p 5432 -U auth -d auth; do sleep 2; done
       containers:
         - name: bnpb-token-service
           image: bnpb-token:dev
