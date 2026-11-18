@@ -13,6 +13,13 @@ spec:
       labels:
         app: pvmbg-mock
     spec:
+      initContainers:
+        - name: wait-for-store-pvmbg
+          image: postgres:17
+          command:
+            - sh
+            - -c
+            - until pg_isready -h store-pvmbg -p 5432 -U admin -d pvmbg; do sleep 2; done
       containers:
         - name: pvmbg-mock
           image: bnpb-pvmbg:dev
