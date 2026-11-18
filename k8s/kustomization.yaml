@@ -9,6 +9,9 @@ configMapGenerator:
     files:
       - pvmbg-init.sql=databases/pvmbg-init.sql
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 resources:
   - 00-namespace.yaml
 
