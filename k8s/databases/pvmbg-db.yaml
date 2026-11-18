@@ -38,6 +38,14 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d/001-init.sql
+              subPath: pvmbg-init.sql
+              readOnly: true
+      volumes:
+        - name: init
+          configMap:
+            name: pvmbg-init
   volumeClaimTemplates:
     - metadata:
         name: data

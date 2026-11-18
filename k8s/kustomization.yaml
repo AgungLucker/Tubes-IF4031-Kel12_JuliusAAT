@@ -1,6 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+configMapGenerator:
+  - name: bmkg-init
+    files:
+      - bmkg-init.sql=databases/bmkg-init.sql
+  - name: pvmbg-init
+    files:
+      - pvmbg-init.sql=databases/pvmbg-init.sql
+
 resources:
   - 00-namespace.yaml
 
