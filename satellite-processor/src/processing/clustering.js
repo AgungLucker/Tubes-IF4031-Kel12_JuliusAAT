@@ -5,6 +5,8 @@ const EARTH_RADIUS_KM = 6371;
 const toRad = (deg) => (deg * Math.PI) / 180;
 const toMs = (value) => new Date(value).getTime();
 
+const timeOf = (detection) => detection.detected_ms ?? toMs(detection.detected_at);
+
 // haversine function distance (km)
 function distanceKm(a, b) {
     const dLat = toRad(b.latitude - a.latitude);
@@ -13,6 +15,14 @@ function distanceKm(a, b) {
         Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLon / 2) ** 2;
     return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
 }
+
+function isLinked(a, b) {
+    if (Math.abs(timeOf(a) - timeOf(b)) > LINK_MAX_TIME_DIFF_MS) return false;
+    // 0.01 deg of latitute = 1.1 km 
+    if (Math.abs(a.latitude - b.latitude) > 0.01) return false;
+    return distanceKm(a, b) <= LINK_MAX_DISTANCE_KM;
+}
+
 
 function groupLinkedDetections(detections) {
     // ordered by detection time
@@ -40,9 +50,10 @@ function groupLinkedDetections(detections) {
             sortedEntries[other].timeMs - sortedEntries[current].timeMs <= LINK_MAX_TIME_DIFF_MS;
             other++
         ) {
-            if (distanceKm(sortedEntries[current].detection, sortedEntries[other].detection) <= LINK_MAX_DISTANCE_KM) {
+            if (isLinked(sortedEntries[current].detection, sortedEntries[other].detection)) {
                 joinGroups(current, other);
             }
+
         }
     }
 
@@ -55,4 +66,4 @@ function groupLinkedDetections(detections) {
     return [...groupsByRoot.values()];
 }
 
-module.exports = { distanceKm, groupLinkedDetections, LINK_MAX_TIME_DIFF_MS };
+module.exports = { distanceKm, isLinked, groupLinkedDetections, LINK_MAX_TIME_DIFF_MS };
