@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analitik HazardEvent</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --ring: rgba(11,11,11,0.10);
+    --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+    --q1: #86b6ef; --q2: #3987e5; --q3: #1c5cab; --q4: #0d366b;
+    --warn-bg: #fff4dc; --warn-ink: #6b4500; --warn-edge: #fab219;
+    --ok-ink: #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+      --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+      --q1: #184f95; --q2: #256abf; --q3: #3987e5; --q4: #86b6ef;
+      --warn-bg: #2e2410; --warn-ink: #fab219; --warn-edge: #fab219; --ok-ink: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+    --q1: #184f95; --q2: #256abf; --q3: #3987e5; --q4: #86b6ef;
+    --warn-bg: #2e2410; --warn-ink: #fab219; --warn-edge: #fab219; --ok-ink: #0ca30c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 14px; margin: 0 0 12px; color: var(--ink-2); font-weight: 600; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; }
+  .filters button, .filters select, .filters input {
+    font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--ring);
+    border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+  .filters button[aria-pressed="true"] { font-weight: 700; border-color: var(--ink-2); }
+  .filters .sep { width: 1px; height: 22px; background: var(--grid); margin: 0 4px; }
+  .banner { display: none; border: 1px solid var(--warn-edge); background: var(--warn-bg); color: var(--warn-ink);
+            border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-weight: 600; }
+  .banner.show { display: flex; gap: 10px; align-items: flex-start; }
+  .banner small { display: block; font-weight: 400; }
+  .status-ok { color: var(--ok-ink); font-weight: 600; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .tile, .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; }
+  .tile .label { color: var(--ink-2); font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .tile .value { font-size: 26px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .tile.partial .value::after { content: "+?"; font-size: 13px; color: var(--warn-ink); margin-left: 4px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+  .chart-box { position: relative; height: 320px; }
+  .chart-box.short { height: 260px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.num, th.num { text-align: right; }
+  .bar { height: 6px; border-radius: 3px; background: var(--q2); min-width: 2px; }
+  .scroll { max-height: 420px; overflow: auto; }
+  .card + .card, .grid2 + .card { margin-top: 16px; }
+  .err { color: var(--warn-ink); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Analitik HazardEvent</h1>
+    <span class="meta" id="asof">memuat…</span>
+  </header>
+
+  <div class="filters" role="toolbar" aria-label="Rentang waktu">
+    <button data-range="24h">24 jam</button>
+    <button data-range="7d">7 hari</button>
+    <button data-range="30d">30 hari</button>
+    <button data-range="365d">1 tahun</button>
+    <button data-range="all">Semua</button>
+    <span class="sep"></span>
+    <label class="meta">Dari <input type="datetime-local" id="from"></label>
+    <label class="meta">Sampai <input type="datetime-local" id="to"></label>
+    <select id="interval" aria-label="Granularitas">
+      <option value="hour">per jam</option><option value="day">per hari</option>
+      <option value="week">per minggu</option><option value="month">per bulan</option><option value="year">per tahun</option>
+    </select>
+    <button id="apply">Terapkan</button>
+  </div>
+
+  <div class="banner" id="banner" role="alert">
+    <span aria-hidden="true">⚠</span>
+    <div>DATA BELUM LENGKAP — sebagian unit penyimpanan tidak terjangkau: <span id="missing"></span>
+      <small>Angka di bawah hanya dari unit yang terjangkau dan bisa lebih kecil dari angka sebenarnya. Ditandai “+?”.</small></div>
+  </div>
+
+  <section class="tiles" id="tiles" aria-label="Total per jenis bahaya"></section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Jumlah kejadian per jenis bahaya terhadap waktu</h2>
+      <div class="chart-box"><canvas id="series" aria-label="Line chart kejadian per jenis bahaya"></canvas></div>
+    </section>
+    <section class="card">
+      <h2>Jumlah kejadian per tingkat severity</h2>
+      <div class="chart-box short"><canvas id="severity" aria-label="Bar chart per severity"></canvas></div>
+      <table id="severityTable" aria-label="Tabel severity"></table>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Jumlah kejadian per wilayah (area_name)</h2>
+    <div class="scroll"><table id="areas"></table></div>
+  </section>
+</main>
+
+<script>
+const TYPES = [
+  ["SEISMIC", "Gempa", "--s1"], ["TSUNAMI", "Tsunami", "--s2"], ["VOLCANIC", "Gunung api", "--s3"],
+  ["WILDFIRE", "Kebakaran hutan", "--s4"], ["COASTAL", "Pesisir", "--s5"],
+];
+const SEVERITIES = [["NORMAL", "--q1"], ["WASPADA", "--q2"], ["SIAGA", "--q3"], ["AWAS", "--q4"]];
+const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const fmt = (n) => Number(n).toLocaleString("id-ID");
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const PRESETS = {
+  "24h": [24 * 3600e3, "hour"], "7d": [7 * 86400e3, "day"], "30d": [30 * 86400e3, "day"],
+  "365d": [365 * 86400e3, "week"], "all": [null, "month"],
+};
+let state = { range: "30d", from: null, to: null, interval: "day" };
+try { Object.assign(state, JSON.parse(localStorage.getItem("hz-analytics") || "{}")); } catch {}
+
+function applyPreset(key) {
+  const [span, interval] = PRESETS[key];
+  state = { range: key, interval, from: span ? new Date(Date.now() - span).toISOString() : null, to: null };
+}
+
+function syncControls() {
+  document.querySelectorAll("[data-range]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.range === state.range)));
+  $("interval").value = state.interval;
+  const toLocal = (iso) => iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60e3).toISOString().slice(0, 16) : "";
+  $("from").value = toLocal(state.from); $("to").value = toLocal(state.to);
+}
+
+let seriesChart, severityChart;
+
+function chartDefaults() {
+  Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  Chart.defaults.color = css("--muted");
+  Chart.defaults.borderColor = css("--grid");
+}
+
+function render(d) {
+  const partial = d.partial;
+  $("banner").classList.toggle("show", partial);
+  $("missing").textContent = d.unavailable_units.join(", ");
+  $("asof").innerHTML = `as_of ${new Date(d.as_of).toLocaleString("id-ID")} · total ${fmt(d.total)}${partial ? "" : ' · <span class="status-ok">✓ lengkap</span>'}`;
+
+  $("tiles").innerHTML = TYPES.map(([k, label, c]) => `
+    <div class="tile ${partial ? "partial" : ""}">
+      <div class="label"><span class="swatch" style="background:var(${c})"></span>${label}</div>
+      <div class="value">${fmt(d.by_hazard_type[k] || 0)}</div>
+    </div>`).join("");
+
+  chartDefaults();
+  const datasets = TYPES.map(([k, label, c]) => ({
+    label, borderColor: css(c), backgroundColor: css(c),
+    data: (d.series[k] || []).map((p) => ({ x: new Date(p.t).getTime(), y: p.n })),
+    borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0, spanGaps: false,
+  }));
+  const allX = datasets.flatMap((ds) => ds.data.map((p) => p.x));
+  const unit = { hour: 3600e3, day: 86400e3, week: 7 * 86400e3, month: 30 * 86400e3, year: 365 * 86400e3 }[d.range.interval];
+  seriesChart?.destroy();
+  seriesChart = new Chart($("series"), {
+    type: "line",
+    data: { datasets },
+    options: {
+      maintainAspectRatio: false, animation: false,
+      interaction: { mode: "nearest", axis: "x", intersect: false },
+      parsing: false,
+      scales: {
+        x: { type: "linear", grid: { display: false }, border: { color: css("--axis") },
+             min: allX.length ? Math.min(...allX) : undefined, max: allX.length ? Math.max(...allX) : undefined,
+             ticks: { maxTicksLimit: 8, callback: (v) => new Date(v).toLocaleDateString("id-ID", unit < 86400e3 ? { hour: "2-digit", day: "numeric", month: "short" } : { day: "numeric", month: "short", year: unit >= 30 * 86400e3 ? "numeric" : undefined }) } },
+        y: { beginAtZero: true, border: { display: false }, ticks: { precision: 0 } },
+      },
+      plugins: {
+        legend: { position: "top", align: "start", labels: { boxWidth: 10, boxHeight: 10, useBorderRadius: true, borderRadius: 3, color: css("--ink-2") } },
+        tooltip: { callbacks: { title: (items) => new Date(items[0].parsed.x).toLocaleString("id-ID"),
+                                label: (i) => ` ${i.dataset.label}: ${fmt(i.parsed.y)}${partial ? " (belum lengkap)" : ""}` } },
+      },
+    },
+  });
+
+  severityChart?.destroy();
+  severityChart = new Chart($("severity"), {
+    type: "bar",
+    data: { labels: SEVERITIES.map(([s]) => s),
+            datasets: [{ data: SEVERITIES.map(([s]) => d.by_severity[s] || 0), backgroundColor: SEVERITIES.map(([, c]) => css(c)),
+                         borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 48 }] },
+    options: { maintainAspectRatio: false, animation: false,
+      scales: { x: { grid: { display: false }, border: { color: css("--axis") } }, y: { beginAtZero: true, border: { display: false }, ticks: { precision: 0 } } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => ` ${fmt(i.parsed.y)} kejadian${partial ? " (belum lengkap)" : ""}` } } } },
+  });
+  $("severityTable").innerHTML = `<tr><th>Severity</th>${TYPES.map(([, l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Total</th></tr>` +
+    SEVERITIES.map(([s]) => `<tr><td>${s}</td>${TYPES.map(([k]) => `<td class="num">${fmt(d.severity_by_hazard_type[k]?.[s] || 0)}</td>`).join("")}<td class="num"><b>${fmt(d.by_severity[s] || 0)}</b></td></tr>`).join("");
+
+  const max = Math.max(1, ...d.by_area.map((a) => a.total));
+  $("areas").innerHTML = `<tr><th>Wilayah</th><th style="width:30%"></th>${TYPES.map(([, l]) => `<th class="num">${l}</th>`).join("")}<th class="num">Total</th></tr>` +
+    (d.by_area.length ? d.by_area.map((a) => `<tr><td>${esc(a.area_name)}</td><td><div class="bar" style="width:${(a.total / max) * 100}%"></div></td>${TYPES.map(([k]) => `<td class="num">${fmt(a.by_type[k] || 0)}</td>`).join("")}<td class="num"><b>${fmt(a.total)}</b></td></tr>`).join("")
+      : `<tr><td colspan="8" class="meta">Belum ada data pada rentang ini.</td></tr>`);
+}
+
+async function load() {
+  syncControls();
+  try { localStorage.setItem("hz-analytics", JSON.stringify(state)); } catch {}
+  const qs = new URLSearchParams({ interval: state.interval });
+  if (state.from) qs.set("from", state.from);
+  if (state.to) qs.set("to", state.to);
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 30000);
+    const base = location.pathname.replace(/\/+$/, "");   // /analytics atau /prefix/analytics
+    const r = await fetch(`${base}/summary?${qs}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    render(await r.json());
+  } catch (e) {
+    $("asof").innerHTML = `<span class="err">Gagal memuat (${esc(e.message)}). Mencoba lagi…</span>`;
+  }
+}
+
+document.querySelectorAll("[data-range]").forEach((b) => b.addEventListener("click", () => { applyPreset(b.dataset.range); load(); }));
+$("apply").addEventListener("click", () => {
+  state = { range: "custom", interval: $("interval").value,
+            from: $("from").value ? new Date($("from").value).toISOString() : null,
+            to: $("to").value ? new Date($("to").value).toISOString() : null };
+  load();
+});
+if (state.range !== "custom" && PRESETS[state.range]) applyPreset(state.range);
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

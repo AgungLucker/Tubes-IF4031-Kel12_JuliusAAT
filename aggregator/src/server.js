@@ -49,14 +49,12 @@ app.use("/analytics", analyticsRouter);
 
 const PORT = process.env.PORT || 8090;
 
-// Jangan biarkan satu promise yang lupa ditangkap mematikan seluruh instance.
 process.on("unhandledRejection", (err) => {
     log.error({ event: "unhandled_rejection", error: err?.message || String(err) });
 });
 
 app.listen(PORT, async () => {
     console.log(`Aggregator service running on port ${PORT}`);
-    // Migrasi dulu (shard yang tak terjangkau dicoba ulang di latar belakang), baru polling.
     await startMigrationLoop();
     if (process.env.DISABLE_POLLER !== "true") startPoller();
 });
