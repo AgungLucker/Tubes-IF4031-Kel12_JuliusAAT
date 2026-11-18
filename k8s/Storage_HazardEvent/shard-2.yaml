@@ -1,0 +1,31 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: shard-2
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  instances: 2
+  storage:
+    storageClass: local-path
+    size: 2Gi
+  resources:
+    requests: { memory: 512Mi }
+    limits:   { memory: 1Gi }
+  inheritedMetadata:
+    labels:
+      role: store
+      group: hazardevent
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: kubernetes.io/hostname
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          group: hazardevent                 
+  bootstrap:
+    initdb:
+      database: hazard
+      owner: aggregator

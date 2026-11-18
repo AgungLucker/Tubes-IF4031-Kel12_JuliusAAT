@@ -1,0 +1,145 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pvc-reaper
+  namespace: sistem-informasi-kebencanaan-bnpb
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hazardevent-pvc-reaper
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "delete"]
+  - apiGroups: [""]
+    resources: ["persistentvolumes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hazardevent-pvc-reaper
+subjects:
+  - kind: ServiceAccount
+    name: pvc-reaper
+    namespace: sistem-informasi-kebencanaan-bnpb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hazardevent-pvc-reaper
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pvc-reaper
+  namespace: sistem-informasi-kebencanaan-bnpb
+rules:
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims", "pods"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pvc-reaper
+  namespace: sistem-informasi-kebencanaan-bnpb
+subjects:
+  - kind: ServiceAccount
+    name: pvc-reaper
+    namespace: sistem-informasi-kebencanaan-bnpb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pvc-reaper
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pvc-reaper-script
+  namespace: sistem-informasi-kebencanaan-bnpb
+data:
+  reap.sh: |
+    #!/bin/sh
+    set -eu
+    NS="${NAMESPACE:-sistem-informasi-kebencanaan-bnpb}"
+    DEAD_AFTER="${DEAD_AFTER_SECONDS:-180}"
+    now=$(date +%s)
+
+    # 1) node mati terlalu lama -> hapus objek Node
+    kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" "}{range .status.conditions[?(@.type=="Ready")]}{.status}{" "}{.lastTransitionTime}{end}{"\n"}{end}' |
+    while read -r node status since; do
+      [ -z "$node" ] && continue
+      [ "$status" = "True" ] && continue
+      # busybox date: "2026-11-17T10:00:00Z" -> "2026-11-17 10:00:00" (UTC)
+      ts=$(date -u -d "$(echo "$since" | sed 's/T/ /; s/Z$//')" +%s 2>/dev/null || echo "$now")
+      age=$((now - ts))
+      if [ "$age" -ge "$DEAD_AFTER" ]; then
+        echo "[reaper] node $node $status selama ${age}s -> hapus objek Node"
+        kubectl delete node "$node" --wait=false || true
+      else
+        echo "[reaper] node $node $status baru ${age}s (< ${DEAD_AFTER}s), tunggu"
+      fi
+    done
+
+    # 2) PVC shard yang PV-nya terikat ke node yang tidak ada lagi -> hapus PVC + pod
+    nodes=" $(kubectl get nodes -o jsonpath='{.items[*].metadata.name}') "
+    kubectl -n "$NS" get pvc -l cnpg.io/cluster -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.volumeName}{"\n"}{end}' |
+    while read -r pvc pv; do
+      [ -z "$pvc" ] && continue
+      [ -z "$pv" ] && continue
+      pvnode=$(kubectl get pv "$pv" -o jsonpath='{.spec.nodeAffinity.required.nodeSelectorTerms[0].matchExpressions[0].values[0]}' 2>/dev/null || true)
+      [ -z "$pvnode" ] && continue
+      case "$nodes" in
+        *" $pvnode "*) ;;   # node masih ada
+        *)
+          echo "[reaper] PVC $pvc terikat ke node hilang $pvnode -> hapus PVC dan pod"
+          kubectl -n "$NS" delete pvc "$pvc" --wait=false || true
+          kubectl -n "$NS" delete pod "$pvc" --wait=false --ignore-not-found || true
+          ;;
+      esac
+    done
+    echo "[reaper] selesai $(date -u +%FT%TZ)"
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pvc-reaper
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 50
+      template:
+        metadata:
+          labels:
+            role: other
+            app: pvc-reaper
+        spec:
+          serviceAccountName: pvc-reaper
+          restartPolicy: Never
+          # tetap bisa berjalan walaupun sebagian node bermasalah
+          tolerations:
+            - { key: node.kubernetes.io/unreachable, operator: Exists, effect: NoExecute, tolerationSeconds: 30 }
+            - { key: node.kubernetes.io/not-ready, operator: Exists, effect: NoExecute, tolerationSeconds: 30 }
+          containers:
+            - name: reaper
+              image: alpine/k8s:1.31.4
+              command: ["/bin/sh", "/scripts/reap.sh"]
+              env:
+                - { name: NAMESPACE, value: sistem-informasi-kebencanaan-bnpb }
+                - { name: DEAD_AFTER_SECONDS, value: "180" }
+              resources:
+                requests: { memory: 128Mi }
+                limits: { memory: 256Mi }
+              volumeMounts:
+                - { name: script, mountPath: /scripts }
+          volumes:
+            - name: script
+              configMap:
+                name: pvc-reaper-script
