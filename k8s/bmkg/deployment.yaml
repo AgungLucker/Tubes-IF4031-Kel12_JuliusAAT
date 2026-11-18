@@ -13,13 +13,6 @@ spec:
       labels:
         app: bmkg-mock
     spec:
-      initContainers:
-        - name: wait-for-store-bmkg
-          image: postgres:17
-          command:
-            - sh
-            - -c
-            - until pg_isready -h store-bmkg -p 5432 -U admin -d bmkg; do sleep 2; done
       containers:
         - name: bmkg-mock
           image: bnpb-bmkg:dev
