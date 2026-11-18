@@ -32,9 +32,6 @@ resources:
   - databases/bmkg-db.yaml
   - databases/pvmbg-db.yaml
   - databases/token-db.yaml
-  - databases/bmkg-db.yaml
-  - databases/pvmbg-db.yaml
-  - databases/token-db.yaml
 
   - network-policies/default-deny.yaml
   - network-policies/aggregator-store.yaml
