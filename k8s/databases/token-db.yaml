@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: token-db
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  selector:
+    app: token-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: token-db
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  serviceName: token-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: token-db
+  template:
+    metadata:
+      labels:
+        app: token-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: token-db-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: token-db-credentials
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: token-db-credentials
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

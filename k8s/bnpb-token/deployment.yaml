@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bnpb-token-service
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bnpb-token-service
+  template:
+    metadata:
+      labels:
+        app: bnpb-token-service
+    spec:
+      containers:
+        - name: bnpb-token-service
+          image: bnpb-token:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8090
+          envFrom:
+            - configMapRef:
+                name: bnpb-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: token-db-credentials
+                  key: DATABASE_URL
+            - name: JWT_PRIVATE_KEY_FILE
+              value: /app/keys/private.pem
+            - name: JWT_PUBLIC_KEY_FILE
+              value: /app/keys/public.pem
+            - name: INTROSPECT_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: INTROSPECT_SERVICE_KEY
+            - name: MEDIA_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: MEDIA_CLIENT_ID
+            - name: MEDIA_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: MEDIA_CLIENT_SECRET
+            - name: LAPANGAN_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: LAPANGAN_CLIENT_ID
+            - name: LAPANGAN_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: LAPANGAN_CLIENT_SECRET
+            - name: INTERNAL_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: INTERNAL_CLIENT_ID
+            - name: INTERNAL_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: INTERNAL_CLIENT_SECRET
+          volumeMounts:
+            - name: jwt-keys
+              mountPath: /app/keys
+              readOnly: true
+      volumes:
+        - name: jwt-keys
+          secret:
+            secretName: bnpb-jwt-keys

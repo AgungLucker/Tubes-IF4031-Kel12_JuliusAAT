@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-aggregator
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  selector:
+    app: store-aggregator
+  ports:
+    - port: 5432
+      targetPort: 5432
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: store-aggregator
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  serviceName: store-aggregator
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-aggregator
+  template:
+    metadata:
+      labels:
+        app: store-aggregator
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: aggregator-db-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: aggregator-db-credentials
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: aggregator-db-credentials
+                  key: POSTGRES_DB
+
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+
+          resources:
+            requests:
+              memory: "512mi"
+            limits:
+              memory: "1Gi"
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi

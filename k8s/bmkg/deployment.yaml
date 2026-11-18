@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bmkg-mock
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bmkg-mock
+  template:
+    metadata:
+      labels:
+        app: bmkg-mock
+    spec:
+      containers:
+        - name: bmkg-mock
+          image: bmkg-mock:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          env:
+            - name: PORT
+              value: "8081"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bmkg-db-credentials
+                  key: DATABASE_URL
+            - name: BMKG_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: BMKG_API_KEY

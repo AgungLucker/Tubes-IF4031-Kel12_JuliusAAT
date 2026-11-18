@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bnpb-config
+  namespace: sistem-informasi-kebencanaan-bnpb
+data:
+  BMKG_BASE_URL: "http://bmkg-mock:8081"
+  PVMBG_BASE_URL: "http://pvmbg-mock:8082"
+  PORT: "8090"
+  PVMBG_MIN_DELAY: "500"
+  PVMBG_MAX_DELAY: "3000"
+
+  POLL_INTERVAL_MS: "3000"
+  SOURCE_TIMEOUT_MS: "2000"
+
+  JWT_ISSUER: "bnpb-token"
+  JWT_AUDIENCE: "bnpb-client-api"
+
+  ACCESS_TOKEN_TTL_SECONDS: "60"
+  REFRESH_TOKEN_TTL_SECONDS: "600"

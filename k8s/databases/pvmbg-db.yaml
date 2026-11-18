@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-pvmbg
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  selector:
+    app: store-pvmbg
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: store-pvmbg
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  serviceName: store-pvmbg
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-pvmbg
+  template:
+    metadata:
+      labels:
+        app: store-pvmbg
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: pvmbg-db-credentials
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

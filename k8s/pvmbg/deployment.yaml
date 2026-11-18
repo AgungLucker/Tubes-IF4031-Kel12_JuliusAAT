@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pvmbg-mock
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pvmbg-mock
+  template:
+    metadata:
+      labels:
+        app: pvmbg-mock
+    spec:
+      containers:
+        - name: pvmbg-mock
+          image: pvmbg-mock:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: PORT
+              value: "8082"
+            - name: PVMBG_MIN_DELAY
+              value: "500"
+            - name: PVMBG_MAX_DELAY
+              value: "3000"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: pvmbg-db-credentials
+                  key: DATABASE_URL
+            - name: PVMBG_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: PVMBG_SECRET_KEY

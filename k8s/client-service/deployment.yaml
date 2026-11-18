@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-service
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client-service
+  template:
+    metadata:
+      labels:
+        app: client-service
+    spec:
+      containers:
+        - name: client-service
+          image: client-service:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: JWT_PUBLIC_KEY_FILE
+              value: /app/keys/public.pem
+            - name: JWT_ISSUER
+              value: bnpb-token
+            - name: JWT_AUDIENCE
+              value: bnpb-client-api
+            - name: TOKEN_SERVICE_URL
+              value: http://bnpb-token-service:8090
+            - name: AGGREGATOR_URL
+              value: http://aggregator:8090
+            - name: UPSTREAM_TIMEOUT_MS
+              value: "3000"
+            - name: INTROSPECT_SERVICE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: INTROSPECT_SERVICE_KEY
+          volumeMounts:
+            - name: jwt-public-key
+              mountPath: /app/keys/public.pem
+              subPath: public.pem
+              readOnly: true
+      volumes:
+        - name: jwt-public-key
+          secret:
+            secretName: bnpb-jwt-keys

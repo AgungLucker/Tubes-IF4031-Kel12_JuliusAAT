@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer-dashboard
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer-dashboard
+  template:
+    metadata:
+      labels:
+        app: consumer-dashboard
+    spec:
+      containers:
+        - name: consumer-dashboard
+          image: consumer-dashboard:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8101
+          env:
+            - name: PORT
+              value: "8101"
+            - name: RABBITMQ_URL
+              valueFrom:
+                secretKeyRef:
+                  name: rabbitmq-credentials
+                  key: RABBITMQ_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer-dashboard
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  selector:
+    app: consumer-dashboard
+  ports:
+    - port: 8101
+      targetPort: 8101

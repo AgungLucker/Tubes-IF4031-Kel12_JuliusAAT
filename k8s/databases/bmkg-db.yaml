@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-bmkg
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  selector:
+    app: store-bmkg
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: store-bmkg
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  serviceName: store-bmkg
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-bmkg
+  template:
+    metadata:
+      labels:
+        app: store-bmkg
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: bmkg-db-credentials
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
