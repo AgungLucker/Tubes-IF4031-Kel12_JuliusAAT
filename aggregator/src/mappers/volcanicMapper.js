@@ -1,3 +1,4 @@
+const { makeHazardId } = require("../db/hazardId");
 const { getVolcanoInfo } = require("../reference/volcanoRegistry");
 
 const ALERT_LEVEL_TO_SEVERITY = { Normal: "NORMAL", Waspada: "WASPADA", Siaga: "SIAGA", Awas: "AWAS" };
@@ -12,7 +13,7 @@ function mapVolcanicReportToHazardEvent(volcanicReport) {
     const volcano = getVolcanoInfo(volcano_id);
 
     return {
-        hazard_id: `PVMBG-${report_id}`,
+        hazard_id: makeHazardId("PVMBG", report_id),
         source: "PVMBG",
         source_ref_id: report_id,
         hazard_type: "VOLCANIC",

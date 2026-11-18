@@ -1,3 +1,5 @@
+const { makeHazardId } = require("../db/hazardId");
+
 const THREAT_LEVEL_TO_SEVERITY = { Waspada: "WASPADA", Siaga: "SIAGA", Awas: "AWAS" };
 
 function computeSeverityFromMagnitude(magnitude) {
@@ -19,7 +21,7 @@ function mapSeismicEventToHazardEvent(seismicEvent, relatedTsunamiWarning) {
         : computeSeverityFromMagnitude(magnitude);
 
     return {
-        hazard_id: `BMKG-${event_id}`,
+        hazard_id: makeHazardId("BMKG", event_id),
         source: "BMKG",
         source_ref_id: event_id,
         hazard_type: "SEISMIC",

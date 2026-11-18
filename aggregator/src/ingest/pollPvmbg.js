@@ -1,6 +1,7 @@
 const { getVolcanicReports } = require("../sources/pvmbgClient");
 const { mapVolcanicReportToHazardEvent } = require("../mappers/volcanicMapper");
-const { upsertHazardEvent, markPollSuccess, markPollError } = require("../store/canonicalStore");
+const { upsertHazardEvent } = require("../store/canonicalStore");
+const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { publishHazardEvent } = require("../broker/publisher");
 
 
@@ -12,10 +13,9 @@ async function pollPvmbg(since) {
         let latestCursor = since;
         for (const volcanicReport of volcanicReports) {
             const hazardEvent = mapVolcanicReportToHazardEvent(volcanicReport);
-            const isNewEvent = await upsertHazardEvent(hazardEvent);
+            const { inserted } = await upsertHazardEvent(hazardEvent);
 
-            if (isNewEvent) {
-                // publish ke message broker
+            if (inserted) {
                 publishHazardEvent(hazardEvent);
             }
 
@@ -28,7 +28,7 @@ async function pollPvmbg(since) {
         await markPollSuccess("PVMBG", latestCursor);
         console.log(`[poll] PVMBG: ${volcanicReports.length} report(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
-        await markPollError("PVMBG", error.message);
+        await markPollError("PVMBG", error.message).catch(() => {});
         console.log(`[poll] PVMBG: GAGAL - ${error.message}`);
     }
 }

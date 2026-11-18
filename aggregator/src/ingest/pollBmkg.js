@@ -1,11 +1,11 @@
 const { getSeismicEvents, getTsunamiWarnings } = require("../sources/bmkgClient");
 const { mapSeismicEventToHazardEvent } = require("../mappers/seismicMapper");
-const { upsertHazardEvent, markPollSuccess, markPollError } = require("../store/canonicalStore");
+const { upsertHazardEvent } = require("../store/canonicalStore");
+const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { publishHazardEvent } = require("../broker/publisher");
 
 
 
-// mapping tsunami warning dengan event seismic nya
 function mapTsunamiWarningByEventId(tsunamiWarnings) {
     const map = {};
     for (const tsunamiWarning of tsunamiWarnings) {
@@ -27,10 +27,9 @@ async function pollBmkg(since) {
         for (const event of events) {
             const relatedWarning = tsunamiWarningByEvent[event.event_id];
             const hazardEvent = mapSeismicEventToHazardEvent(event, relatedWarning);
-            const isNewEvent = await upsertHazardEvent(hazardEvent);
+            const { inserted } = await upsertHazardEvent(hazardEvent);
 
-            if (isNewEvent) {
-                // publish ke message broker
+            if (inserted) {
                 publishHazardEvent(hazardEvent);
             }
 
@@ -41,7 +40,7 @@ async function pollBmkg(since) {
         await markPollSuccess("BMKG", latestCursor);
         console.log(`[poll] BMKG: ${events.length} event(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
-        await markPollError("BMKG", error.message);
+        await markPollError("BMKG", error.message).catch(() => {});
         console.log(`[poll] BMKG: GAGAL - ${error.message}`);
     }
 }
