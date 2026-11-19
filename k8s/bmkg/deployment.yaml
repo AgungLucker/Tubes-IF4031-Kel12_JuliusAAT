@@ -32,3 +32,8 @@ spec:
                 secretKeyRef:
                   name: bnpb-secrets
                   key: BMKG_API_KEY
+          resources:
+            requests:
+              memory: "64Mi"
+            limits:
+              memory: "128Mi"

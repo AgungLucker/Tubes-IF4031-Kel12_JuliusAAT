@@ -36,3 +36,8 @@ spec:
                 secretKeyRef:
                   name: bnpb-secrets
                   key: PVMBG_SECRET_KEY
+          resources:
+            requests:
+              memory: "64Mi"
+            limits:
+              memory: "128Mi"
