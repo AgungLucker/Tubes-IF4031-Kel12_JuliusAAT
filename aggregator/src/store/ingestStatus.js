@@ -1,14 +1,14 @@
-// ingest_status disimpan di DB tersendiri (store-ingest-status), terpisah dari shard HazardEvent,
+// tabel ingest statusdisimpan di DB tersendiri (store-ingest), terpisah dari shard HazardEvent,
 // sehingga state polling tidak ikut hilang/berpindah saat shard rebalance atau satu node shard mati.
 const { makePool } = require("../db/shards");
 
-const INGEST_STATUS_DATABASE_URL = process.env.INGEST_STATUS_DATABASE_URL;
+const INGEST_DATABASE_URL = process.env.INGEST_DATABASE_URL;
 
-if (!INGEST_STATUS_DATABASE_URL) {
-    throw new Error("INGEST_STATUS_DATABASE_URL belum diatur");
+if (!INGEST_DATABASE_URL) {
+    throw new Error("INGEST_DATABASE_URL belum diatur");
 }
 
-const pool = makePool("ingest-status", INGEST_STATUS_DATABASE_URL);
+const pool = makePool("ingest", INGEST_DATABASE_URL);
 
 async function getIngestStatus() {
     const { rows } = await pool.query("SELECT * FROM ingest_status");

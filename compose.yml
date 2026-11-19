@@ -1,9 +1,11 @@
 services:
   aggregator:
     build: ./aggregator
-    networks: [app_net, aggregator_store_net]
+    networks: [app_net, aggregator_store_net, ingest_store_net]
     depends_on:
       store-aggregator:
+        condition: service_healthy
+      store-ingest:
         condition: service_healthy
     develop:
       watch:
@@ -14,6 +16,9 @@ services:
           action: rebuild
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_AGGREGATOR_USER}:${POSTGRES_AGGREGATOR_PASSWORD}@store-aggregator:5432/${POSTGRES_AGGREGATOR_DB}
+      - INGEST_DATABASE_URL=postgresql://${POSTGRES_INGEST_USER}:${POSTGRES_INGEST_PASSWORD}@store-ingest:5432/${POSTGRES_INGEST_DB}
+      - DLQ_MAX_ATTEMPTS=${DLQ_MAX_ATTEMPTS}
+      - DLQ_RETRY_DELAY_MS=${DLQ_RETRY_DELAY_MS}
       - BMKG_API_KEY=${BMKG_API_KEY}
       - PVMBG_TOKEN=${PVMBG_TOKEN}
       - BMKG_BASE_URL=${BMKG_BASE_URL}
@@ -21,6 +26,8 @@ services:
       - SOURCE_TIMEOUT_MS=${SOURCE_TIMEOUT_MS}
       - POLL_INTERVAL_MS=${POLL_INTERVAL_MS}
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - SATELLITE_PROCESSOR_URL=http://satellite-processor:8083
+      - SATELLITE_PROCESSOR_API_KEY=${SATELLITE_PROCESSOR_API_KEY}
 
   pvmbg-mock:
     build: ./pvmbg
@@ -103,6 +110,25 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+  
+  store-ingest:
+    image: postgres:17
+    networks: [ingest_store_net]
+    volumes:
+      - ingest-data:/var/lib/postgresql/data
+      - ./postgres/init-scripts/ingest:/docker-entrypoint-initdb.d:ro
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_INGEST_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_INGEST_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_INGEST_DB}
+    healthcheck:
+      test: [ "CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER:-postgres}" -d "$${POSTGRES_DB:-postgres}" -h localhost || exit 1' ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
 
   store-pvmbg:
     image: postgres:17
@@ -267,6 +293,7 @@ services:
 
 volumes:
   aggregator-data:
+  ingest-data:
   pvmbg-data:
   bmkg-data:
   token-db-data:
@@ -275,6 +302,8 @@ volumes:
 networks:
   app_net:
   aggregator_store_net:
+    internal: true
+  ingest_store_net:
     internal: true
   pvmbg_store_net:
     internal: true

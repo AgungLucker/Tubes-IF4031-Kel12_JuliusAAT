@@ -13,9 +13,9 @@ configMapGenerator:
   - name: satellite-init
     files:
       - satellite-init.sql=databases/satellite-init.sql
-  - name: ingest-status-init
+  - name: ingest-init
     files:
-      - ingest-status-init.sql=databases/ingest-status-init.sql
+      - ingest-init.sql=databases/ingest-init.sql
 
 # Manifests refer to local names (bnpb-*:dev); the cluster pulls them from GHCR.
 # Change newName/newTag here (or: kustomize edit set image) to switch registry.
@@ -83,7 +83,7 @@ resources:
   - databases/pvmbg-db.yaml
   - databases/token-db.yaml
   - databases/satellite-db.yaml
-  - databases/ingest-status-db.yaml
+  - databases/ingest-db.yaml
 
   - network-policies/default-deny.yaml
   - network-policies/database-isolation.yaml

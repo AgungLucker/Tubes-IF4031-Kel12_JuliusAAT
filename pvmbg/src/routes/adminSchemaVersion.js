@@ -11,10 +11,6 @@ let breaking = { mode: "none" };
 router.post("/", async (req, res) => {
     const { confidence, breaking: mode, field, to } = req.body;
 
-    if (confidence === undefined && mode === undefined) {
-        return res.status(400).json({ error: '"confidence" atau "breaking" wajib diisi' });
-    }
-
     if (confidence !== undefined && typeof confidence !== 'boolean') {
         return res.status(400).json({ error: '"confidence" harus bertipe boolean' });
     }
