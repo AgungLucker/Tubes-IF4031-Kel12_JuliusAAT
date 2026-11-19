@@ -2,6 +2,9 @@ const IDLE_MS = 30000; // asumsi, sesuaikan dengan interval heartbeat asli
 const MIN_DELAY_MS = 1000;
 const MAX_DELAY_MS = 30000;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const YIELD_EVERY = 50;
+const yieldToEventLoop = () => new Promise((resolve) => setImmediate(resolve));
+
 
 function parseSSEBlock(block) {
     const event = { id: null, type: "message", data: "" };
@@ -40,6 +43,7 @@ async function readStream({ url, token, from, onEvent }) {
 
         const decoder = new TextDecoder();
         let buffer = "";
+        let processed = 0;
         for await (const chunk of res.body) {
             arm();
             buffer += decoder.decode(chunk, { stream: true });
@@ -48,7 +52,11 @@ async function readStream({ url, token, from, onEvent }) {
             while ((sep = buffer.indexOf("\n\n")) !== -1) {
                 const block = buffer.slice(0, sep);
                 buffer = buffer.slice(sep + 2);
-                if (block.trim()) await onEvent(parseSSEBlock(block));
+
+                if (block.trim()) {
+                    await onEvent(parseSSEBlock(block));
+                    if (++processed % YIELD_EVERY === 0) await yieldToEventLoop();
+                }
             }
         }
     } finally {
