@@ -43,11 +43,13 @@ spec:
               command: ["pg_isready", "-U", "admin", "-d", "pvmbg"]
             initialDelaySeconds: 5
             periodSeconds: 5
-            failureThreshold: 30
+            timeoutSeconds: 5
+            failureThreshold: 120
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "admin", "-d", "pvmbg"]
             periodSeconds: 5
+            timeoutSeconds: 5
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data

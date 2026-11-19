@@ -1,4 +1,4 @@
-const shards = require("./shards");
+const {shards} = require("./shards");
 const READ_TIMEOUT_MS = Number(process.env.SHARD_READ_TIMEOUT_MS || 3000);
 
 function isQueryBug(err) {

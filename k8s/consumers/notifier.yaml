@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: consumer-notifier
-          image: bnpb-notifier:dev
+          image: ghcr.io/julius123123/bnpb-notifier:dev
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8102

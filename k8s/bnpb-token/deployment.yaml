@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: bnpb-token-service
-          image: bnpb-token:dev
+          image: ghcr.io/julius123123/bnpb-token:dev
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8090

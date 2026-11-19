@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const shards = require("./shards");
+const {shards} = require("./shards");
 
 const MIGRATIONS_DIR = process.env.MIGRATIONS_DIR || path.join(__dirname, "..", "..", "migrations");
 const LOCK_KEY = 4031012; // konstanta bebas, sama di semua instance

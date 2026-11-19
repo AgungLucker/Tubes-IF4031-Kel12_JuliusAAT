@@ -23,7 +23,7 @@ spec:
               app: aggregator
       containers:
         - name: aggregator
-          image: bnpb-aggregator:dev
+          image: ghcr.io/julius123123/bnpb-aggregator:dev
           imagePullPolicy: IfNotPresent
 
           ports:
@@ -56,6 +56,12 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: aggregator-db-credentials
+                  key: DATABASE_URL
+
+            - name: INGEST_STATUS_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: ingest-status-db-credentials
                   key: DATABASE_URL
 
             - name: RABBITMQ_URL
