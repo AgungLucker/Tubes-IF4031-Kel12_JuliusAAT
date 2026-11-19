@@ -52,4 +52,4 @@ function buildShards() {
 
 const shards = buildShards();
 
-module.exports = shards;
+module.exports = {shards, makePool};

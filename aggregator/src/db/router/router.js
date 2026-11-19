@@ -1,5 +1,5 @@
 
-const shards = require("../shards");
+const {shards} = require("../shards");
 const { BUCKETS, makeHazardId, bucketOf } = require("../hazardId");
 
 function shardIndexForBucket(bucket) {
