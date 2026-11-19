@@ -24,7 +24,7 @@ spec:
       containers:
         - name: aggregator
           image: ghcr.io/julius123123/bnpb-aggregator:dev
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
 
           ports:
             - containerPort: 8090

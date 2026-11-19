@@ -17,7 +17,7 @@ spec:
       containers:
         - name: bmkg-mock
           image: ghcr.io/julius123123/bnpb-bmkg:dev
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
           env:
