@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: client-service
+        role: api
     spec:
       containers:
         - name: client-service

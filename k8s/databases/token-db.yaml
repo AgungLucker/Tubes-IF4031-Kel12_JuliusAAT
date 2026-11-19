@@ -26,7 +26,10 @@ spec:
     metadata:
       labels:
         app: token-db
+        role: store
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: node-a
       containers:
         - name: postgres
           image: postgres:16-alpine

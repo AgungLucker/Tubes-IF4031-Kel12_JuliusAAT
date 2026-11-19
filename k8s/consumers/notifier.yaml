@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: consumer-notifier
+        role: consumer
     spec:
       containers:
         - name: consumer-notifier

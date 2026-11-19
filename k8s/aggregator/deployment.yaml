@@ -4,7 +4,7 @@ metadata:
   name: aggregator
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: aggregator
@@ -12,7 +12,15 @@ spec:
     metadata:
       labels:
         app: aggregator
+        role: aggregator
     spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: aggregator
       containers:
         - name: aggregator
           image: bnpb-aggregator:dev

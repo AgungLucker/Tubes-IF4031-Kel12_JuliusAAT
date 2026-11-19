@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: consumer-dashboard
+        role: consumer
     spec:
       containers:
         - name: consumer-dashboard

@@ -1,3 +1,4 @@
+
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -13,7 +14,10 @@ spec:
     metadata:
       labels:
         app: rabbitmq
+        role: broker
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: node-a
       containers:
         - name: rabbitmq
           image: rabbitmq:3-management
@@ -31,9 +35,20 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-credentials
                   key: RABBITMQ_PASSWORD
+          volumeMounts:
+            - name: rabbitmq-data
+              mountPath: /var/lib/rabbitmq
           resources:
             requests:
               memory: "512Mi"
             limits:
               memory: "1Gi"
-
+  volumeClaimTemplates:
+    - metadata:
+        name: rabbitmq-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 2Gi

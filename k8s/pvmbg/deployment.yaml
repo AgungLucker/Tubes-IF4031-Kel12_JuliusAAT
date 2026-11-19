@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: pvmbg-mock
+        role: mock
     spec:
       containers:
         - name: pvmbg-mock

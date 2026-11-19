@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: bnpb-token-service
+        role: auth
     spec:
       containers:
         - name: bnpb-token-service

@@ -12,6 +12,7 @@ spec:
     metadata:
       labels:
         app: bmkg-mock
+        role: mock
     spec:
       containers:
         - name: bmkg-mock

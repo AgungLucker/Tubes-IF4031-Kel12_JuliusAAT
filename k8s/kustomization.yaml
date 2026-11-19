@@ -47,4 +47,5 @@ resources:
   - databases/token-db.yaml
 
   - network-policies/default-deny.yaml
-  - network-policies/aggregator-store.yaml
+  - network-policies/database-isolation.yaml
+  - network-policies/application-traffic.yaml
