@@ -10,6 +10,37 @@ configMapGenerator:
   - name: pvmbg-init
     files:
       - pvmbg-init.sql=databases/pvmbg-init.sql
+  - name: satellite-init
+    files:
+      - satellite-init.sql=databases/satellite-init.sql
+
+# Manifests refer to local names (bnpb-*:dev); the cluster pulls them from GHCR.
+# Change newName/newTag here (or: kustomize edit set image) to switch registry.
+images:
+  - name: bnpb-aggregator
+    newName: ghcr.io/julius123123/bnpb-aggregator
+    newTag: dev
+  - name: bnpb-bmkg
+    newName: ghcr.io/julius123123/bnpb-bmkg
+    newTag: dev
+  - name: bnpb-pvmbg
+    newName: ghcr.io/julius123123/bnpb-pvmbg
+    newTag: dev
+  - name: bnpb-client
+    newName: ghcr.io/julius123123/bnpb-client
+    newTag: dev
+  - name: bnpb-token
+    newName: ghcr.io/julius123123/bnpb-token
+    newTag: dev
+  - name: bnpb-dashboard
+    newName: ghcr.io/julius123123/bnpb-dashboard
+    newTag: dev
+  - name: bnpb-notifier
+    newName: ghcr.io/julius123123/bnpb-notifier
+    newTag: dev
+  - name: bnpb-satellite-processor
+    newName: ghcr.io/julius123123/bnpb-satellite-processor
+    newTag: dev
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -29,6 +60,9 @@ resources:
   - pvmbg/deployment.yaml
   - pvmbg/service.yaml
 
+  - satellite-processor/deployment.yaml
+  - satellite-processor/service.yaml
+
   - client-service/deployment.yaml
   - client-service/service.yaml
 
@@ -45,6 +79,7 @@ resources:
   - databases/bmkg-db.yaml
   - databases/pvmbg-db.yaml
   - databases/token-db.yaml
+  - databases/satellite-db.yaml
 
   - network-policies/default-deny.yaml
   - network-policies/database-isolation.yaml
