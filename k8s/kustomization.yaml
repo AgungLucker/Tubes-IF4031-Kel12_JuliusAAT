@@ -13,9 +13,6 @@ configMapGenerator:
   - name: satellite-init
     files:
       - satellite-init.sql=databases/satellite-init.sql
-
-# Manifests refer to local names (bnpb-*:dev); the cluster pulls them from GHCR.
-# Change newName/newTag here (or: kustomize edit set image) to switch registry.
 images:
   - name: bnpb-aggregator
     newName: ghcr.io/julius123123/bnpb-aggregator

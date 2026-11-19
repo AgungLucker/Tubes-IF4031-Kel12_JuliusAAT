@@ -58,9 +58,9 @@ done
 step "Pemeriksaan"
 kubectl -n "$NS" get clusters
 kubectl -n "$NS" get pods -l group=hazardevent -o wide
-stores=$(kubectl -n "$NS" get pods -l role=store --no-headers 2>/dev/null | wc -l | tr -d ' ')
+stores=$(kubectl -n "$NS" get pods -l group=hazardevent,role=store --no-headers 2>/dev/null | wc -l | tr -d ' ')
 if [ "$stores" -lt 6 ]; then
-  echo "PERINGATAN: hanya $stores pod berlabel role=store (harusnya 6). Tester Agent mencari pod lewat label ini." >&2
+  echo "PERINGATAN: hanya $stores pod berlabel role=store (harusnya 6: 3 shard x 2 instance, label group=hazardevent). Tester Agent mencari pod lewat label ini." >&2
   exit 1
 fi
 echo "OK: $stores pod role=store, tiap shard punya 2 salinan di node berbeda."
