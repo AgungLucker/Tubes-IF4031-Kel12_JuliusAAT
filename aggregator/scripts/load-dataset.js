@@ -3,7 +3,7 @@ const fs = require("fs");
 const crypto = require("crypto");
 const { upsertHazardEvent } = require("../src/store/canonicalStore");
 const { shardFor, makeHazardId, bucketRanges } = require("../src/db/router");
-const shards = require("../src/db/shards");
+const {shards} = require("../src/db/shards");
 
 function parseArgs(argv) {
     const args = { _: [] };
