@@ -8,7 +8,8 @@ import { log } from './logger.js';
 // import rateLimit from 'express-rate-limit';
 import {verifyJwt, checkSession} from './auth.js';
 
-const HAZARD_TYPES = new Set(['SEISMIC', 'VOLCANIC']);
+const HAZARD_TYPES = new Set(['SEISMIC', 'TSUNAMI', 'VOLCANIC', 'WILDFIRE', 'COASTAL']);
+const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
 
 
 export function createApp({cfg, keys}) {
@@ -33,12 +34,19 @@ export function createApp({cfg, keys}) {
 
     app.get('/data', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
         const fields = resolveFields(req.auth.scope, req.query.fields);
-        const {hazard_type} = req.query;
-        
-        if (hazard_type !== undefined && !HAZARD_TYPES.has(hazard_type)) throw new HttpError(400, 'invalid_request', 'hazard_type must be SEISMIC or VOLCANIC');
+        const {hazard_type, source} = req.query;
 
+        if (hazard_type !== undefined && !HAZARD_TYPES.has(hazard_type)) {
+            throw new HttpError(400, 'invalid_request', `hazard_type must be one of: ${[...HAZARD_TYPES].join(', ')}`);
+        }
+        if (source !== undefined && !SOURCES.has(source)) {
+            throw new HttpError(400, 'invalid_request', `source must be one of: ${[...SOURCES].join(', ')}`);
+        }
 
-        const qs = hazard_type ? `?hazard_type=${hazard_type}` : '';
+        const params = new URLSearchParams();
+        if (hazard_type) params.set('hazard_type', hazard_type);
+        if (source) params.set('source', source);
+        const qs = params.size ? `?${params}` : '';
         let r;
 
         try{
