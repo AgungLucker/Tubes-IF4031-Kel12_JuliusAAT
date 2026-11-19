@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: pvmbg-mock
-          image: bnpb-pvmbg:dev
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/julius123123/bnpb-pvmbg:dev
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
           env:

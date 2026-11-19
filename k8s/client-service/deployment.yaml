@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
         - name: client-service
-          image: bnpb-client:dev
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/julius123123/bnpb-client:dev
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
