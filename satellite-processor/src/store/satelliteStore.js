@@ -20,14 +20,16 @@ async function commitBatch({ offset, watermark, fires = [], detections = [] }) {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
-        for (const fire of fires) await upsertFire(client, fire);
-        for (const detection of detections) await upsertDetection(client, detection);
+        await upsertFires(client, fires);
+        await upsertDetections(client, detections);
+
         await client.query(
             `UPDATE stream_checkpoint
                 SET last_offset = $2, watermark = $3, updated_at = now()
               WHERE stream_name = $1`,
             [STREAM, offset, watermark]
         );
+
         await client.query("COMMIT");
     } catch (err) {
         await client.query("ROLLBACK");
@@ -37,13 +39,22 @@ async function commitBatch({ offset, watermark, fires = [], detections = [] }) {
     }
 }
 
-async function upsertFire(client, f) {
+async function upsertFires(client, fires) {
+    if (fires.length === 0) return;
     await client.query(
         `INSERT INTO fires (
             fire_id, status, merged_into, latitude, longitude, detection_count,
             satellites, max_confidence, total_frp_mw,
             earliest_detected_at, latest_detected_at, closed_at, updated_at
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12, now())
+        )
+        SELECT fire_id, status, merged_into, latitude, longitude, detection_count,
+               ARRAY(SELECT jsonb_array_elements_text(satellites)), max_confidence, total_frp_mw,
+               earliest_detected_at, latest_detected_at, closed_at, now()
+          FROM jsonb_to_recordset($1::jsonb) AS f(
+               fire_id text, status text, merged_into text,
+               latitude double precision, longitude double precision, detection_count integer,
+               satellites jsonb, max_confidence text, total_frp_mw double precision,
+               earliest_detected_at timestamptz, latest_detected_at timestamptz, closed_at timestamptz)
         ON CONFLICT (fire_id) DO UPDATE SET
             status = EXCLUDED.status,
             merged_into = EXCLUDED.merged_into,
@@ -57,28 +68,33 @@ async function upsertFire(client, f) {
             latest_detected_at = EXCLUDED.latest_detected_at,
             closed_at = EXCLUDED.closed_at,
             updated_at = now()`,
-        [f.fire_id, f.status, f.merged_into, f.latitude, f.longitude, f.detection_count,
-        f.satellites, f.max_confidence, f.total_frp_mw,
-        f.earliest_detected_at, f.latest_detected_at, f.closed_at]
+        [JSON.stringify(fires)]
     );
 }
 
-async function upsertDetection(client, d) {
+async function upsertDetections(client, detections) {
+    if (detections.length === 0) return;
     await client.query(
         `INSERT INTO detections (
             detection_key, satellite, detected_at, latitude, longitude,
             confidence, frp_mw, disposition, fire_id, feed_offset
-        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        )
+        SELECT detection_key, satellite, detected_at, latitude, longitude,
+               confidence, frp_mw, disposition, fire_id, feed_offset
+          FROM jsonb_to_recordset($1::jsonb) AS d(
+               detection_key text, satellite text, detected_at timestamptz,
+               latitude double precision, longitude double precision, confidence text,
+               frp_mw double precision, disposition text, fire_id text, feed_offset bigint)
         ON CONFLICT (detection_key) DO UPDATE SET
             confidence = EXCLUDED.confidence,
             frp_mw = EXCLUDED.frp_mw,
             disposition = EXCLUDED.disposition,
             fire_id = EXCLUDED.fire_id,
             feed_offset = EXCLUDED.feed_offset`,
-        [d.detection_key, d.satellite, d.detected_at, d.latitude, d.longitude,
-        d.confidence, d.frp_mw, d.disposition, d.fire_id, d.feed_offset]
+        [JSON.stringify(detections)]
     );
 }
+
 
 async function listFires({ since } = {}) {
     const result = await pool.query(
