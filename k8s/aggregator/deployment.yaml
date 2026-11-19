@@ -46,6 +46,12 @@ spec:
                   name: bnpb-secrets
                   key: PVMBG_TOKEN
 
+            - name: SATELLITE_PROCESSOR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: SATELLITE_PROCESSOR_API_KEY
+
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:

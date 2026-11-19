@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: satellite-processor
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: satellite-processor
+  template:
+    metadata:
+      labels:
+        app: satellite-processor
+        role: processor
+    spec:
+      containers:
+        - name: satellite-processor
+          image: bnpb-satellite-processor:dev
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8083
+          env:
+            - name: PORT
+              value: "8083"
+            - name: LATENESS_LIMIT_MIN
+              value: "300"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: satellite-db-credentials
+                  key: DATABASE_URL
+            - name: SATELLITE_FEED_URL
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: SATELLITE_FEED_URL
+            - name: SATELLITE_FEED_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: SATELLITE_FEED_TOKEN
+            - name: SATELLITE_PROCESSOR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: SATELLITE_PROCESSOR_API_KEY
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8083
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            requests:
+              memory: "64Mi"
+            limits:
+              memory: "192Mi"

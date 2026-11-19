@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: store-satellite
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  selector:
+    app: store-satellite
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: store-satellite
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  serviceName: store-satellite
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-satellite
+  template:
+    metadata:
+      labels:
+        app: store-satellite
+        role: store
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: node-b
+      containers:
+        - name: postgres
+          image: postgres:17
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: satellite-db-credentials
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "admin", "-d", "satellite"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "admin", "-d", "satellite"]
+            periodSeconds: 5
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d/001-init.sql
+              subPath: satellite-init.sql
+              readOnly: true
+          resources:
+            requests:
+              memory: "512Mi"
+            limits:
+              memory: "1Gi"
+
+      volumes:
+        - name: init
+          configMap:
+            name: satellite-init
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
