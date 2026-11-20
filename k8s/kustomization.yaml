@@ -78,7 +78,7 @@ resources:
   - rabbitmq/statefulset.yaml
   - rabbitmq/service.yaml
 
-  - databases/aggregator-db.yaml
+
   - databases/bmkg-db.yaml
   - databases/pvmbg-db.yaml
   - databases/token-db.yaml

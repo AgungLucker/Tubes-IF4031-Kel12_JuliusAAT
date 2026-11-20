@@ -29,7 +29,7 @@ spec:
         role: store
     spec:
       nodeSelector:
-        kubernetes.io/hostname: node-a
+        kubernetes.io/hostname: node-c
       containers:
         - name: postgres
           image: postgres:17

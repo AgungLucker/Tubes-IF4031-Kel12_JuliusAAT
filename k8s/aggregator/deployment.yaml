@@ -14,6 +14,7 @@ spec:
         app: aggregator
         role: aggregator
     spec:
+      serviceAccountName: aggregator
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -51,12 +52,29 @@ spec:
                 secretKeyRef:
                   name: bnpb-secrets
                   key: SATELLITE_PROCESSOR_API_KEY
-
-            - name: DATABASE_URL
+            - name: SHARD_COUNT
+              value: "3"
+            - name: SHARD_1_URI
               valueFrom:
                 secretKeyRef:
-                  name: aggregator-db-credentials
-                  key: DATABASE_URL
+                  name: shard-1-app
+                  key: uri
+            - name: SHARD_2_URI
+              valueFrom:
+                secretKeyRef:
+                  name: shard-2-app
+                  key: uri
+            - name: SHARD_3_URI
+              valueFrom:
+                secretKeyRef:
+                  name: shard-3-app
+                  key: uri
+            - name: AUDIT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: aggregator-audit
+                  key: AUDIT_TOKEN
+                  optional: true
 
             - name: INGEST_DATABASE_URL
               valueFrom:

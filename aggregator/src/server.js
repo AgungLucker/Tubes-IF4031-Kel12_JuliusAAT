@@ -3,15 +3,18 @@ const rateLimit = require("express-rate-limit");
 const { randomUUID } = require("crypto")
 
 const healthRouter = require("./routes/health");
-const hazardEventsRouter = require("./routes/hazardEvents")
+const hazardEventsRouter = require("./routes/hazardEvents");
+const rejectedMessagesRouter = require("./routes/rejectedMessages");
 const auditRouter = require("./routes/audit");
 const analyticsRouter = require("./routes/analytics");
 const { startMigrationLoop } = require("./db/migrate");
 const { startPoller } = require("./ingest/poller");
 const { startPublisher } = require("./broker/publisher");
+const { runWithRetry: startFieldReportConsumer } = require("./consumer/consume");
 const { log } = require("./logger")
 
 startPublisher();
+startFieldReportConsumer();
 
 const app = express();
 
@@ -44,6 +47,7 @@ const limiter = rateLimit({
     message: { error: "Too many requests" }
 });
 app.use("/hazard-events", limiter, hazardEventsRouter)
+app.use("/rejected-messages", limiter, rejectedMessagesRouter)
 app.use("/internal/audit", auditRouter);
 app.use("/analytics", analyticsRouter);
 

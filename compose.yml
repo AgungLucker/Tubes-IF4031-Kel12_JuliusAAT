@@ -7,6 +7,8 @@ services:
         condition: service_healthy
       store-ingest:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy           
     develop:
       watch:
         - path: ./aggregator/src
@@ -242,7 +244,9 @@ services:
       - TOKEN_SERVICE_URL=http://bnpb-token-service:8090
       - INTROSPECT_SERVICE_KEY=${INTROSPECT_SERVICE_KEY}
       - AGGREGATOR_URL=http://aggregator:8090
+      - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
       - UPSTREAM_TIMEOUT_MS=3000
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     volumes:
       - ./bnpb-token/keys/public.pem:/app/keys/public.pem:ro
 
@@ -275,7 +279,6 @@ services:
       - PORT=8101
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
 
-
   consumer-notifier:
     build: ./consumer/notifier
     networks: [app_net]
@@ -291,6 +294,32 @@ services:
       - QUEUE_NAME=notifier
       - BINDINGS=hazard.*.siaga,hazard.*.awas
       - NOTIFY_DELAY_MS=0
+    
+  prometheus:
+    image: prom/prometheus:v3.13.5
+    networks: [app_net]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    networks: [app_net]
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
 
 volumes:
   aggregator-data:
@@ -299,6 +328,8 @@ volumes:
   bmkg-data:
   token-db-data:
   satellite-data:
+  prometheus-data:
+  grafana-data:
 
 networks:
   app_net:

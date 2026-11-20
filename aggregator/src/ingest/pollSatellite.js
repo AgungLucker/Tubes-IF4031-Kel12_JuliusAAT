@@ -2,7 +2,9 @@ const { getFires } = require("../sources/satelliteClient");
 const { mapFireToHazardEvent } = require("../mappers/fireMapper");
 const { upsertHazardEvent, deleteHazardEvent, findHazardEvent } = require("../store/canonicalStore");
 const { markPollSuccess, markPollError } = require("../store/ingestStatus");
+const { saveRejected } = require("../store/rejectedStore");
 const { publishHazardEvent } = require("../broker/publisher");
+const { BadPayloadError } = require("../sources/httpClient");
 
 async function syncFire(fire) {
     const hazardEvent = mapFireToHazardEvent(fire);
