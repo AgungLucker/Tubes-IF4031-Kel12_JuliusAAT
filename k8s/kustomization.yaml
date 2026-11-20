@@ -29,31 +29,31 @@ configMapGenerator:
     files:
       - satellite-processor.json=monitoring/files/grafana-dashboards/satellite-processor.json
 
-# Manifests refer to local names (bnpb-*:dev); the cluster pulls them from GHCR.
-# Change newName/newTag here (or: kustomize edit set image) to switch registry.
+# Manifests use the full GHCR name (ghcr.io/julius123123/bnpb-*:dev). `name` must match that
+# exactly or newTag is silently ignored. Bump newTag to roll a new build.
 images:
-  - name: bnpb-aggregator
+  - name: ghcr.io/julius123123/bnpb-aggregator
     newName: ghcr.io/julius123123/bnpb-aggregator
     newTag: cf3dbe3
-  - name: bnpb-bmkg
+  - name: ghcr.io/julius123123/bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
     newTag: cf3dbe3
-  - name: bnpb-pvmbg
+  - name: ghcr.io/julius123123/bnpb-pvmbg
     newName: ghcr.io/julius123123/bnpb-pvmbg
     newTag: cf3dbe3
-  - name: bnpb-client
+  - name: ghcr.io/julius123123/bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
     newTag: cf3dbe3
-  - name: bnpb-token
+  - name: ghcr.io/julius123123/bnpb-token
     newName: ghcr.io/julius123123/bnpb-token
     newTag: cf3dbe3
-  - name: bnpb-dashboard
+  - name: ghcr.io/julius123123/bnpb-dashboard
     newName: ghcr.io/julius123123/bnpb-dashboard
     newTag: cf3dbe3
-  - name: bnpb-notifier
+  - name: ghcr.io/julius123123/bnpb-notifier
     newName: ghcr.io/julius123123/bnpb-notifier
     newTag: cf3dbe3
-  - name: bnpb-satellite-processor
+  - name: ghcr.io/julius123123/bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
     newTag: cf3dbe3
 
