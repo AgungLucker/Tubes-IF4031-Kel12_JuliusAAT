@@ -5,11 +5,14 @@ metadata:
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
   instances: 2
+  # Default 30s (3 failed probes x 10s) kills the instance manager while PostgreSQL is
+  # still starting on slow VM disks. 300s = 30 failed probes.
+  livenessProbeTimeout: 300
   storage:
     storageClass: local-path
     size: 2Gi
   resources:
-    requests: { memory: 512Mi }
+    requests: { memory: 256Mi }
     limits:   { memory: 1Gi }
   inheritedMetadata:
     labels:
@@ -18,6 +21,19 @@ spec:
   affinity:
     enablePodAntiAffinity: true
     podAntiAffinityType: required
+    # Preferred home of this shard's primary. The initdb Job does not carry the
+    # group=hazardevent label, so the topology spread below does not apply to it and the
+    # scheduler would put every volume on the same node; with local-path storage the
+    # primary must then run there and DoNotSchedule blocks it. One distinct preferred
+    # node per shard keeps volumes spread so the hard constraint can be satisfied.
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          preference:
+            matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: In
+                values: [node-c]
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: kubernetes.io/hostname
