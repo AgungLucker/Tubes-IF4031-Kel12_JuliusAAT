@@ -1,6 +1,7 @@
 const { getSeismicEvents, getTsunamiWarnings } = require("../sources/bmkgClient");
 const { mapSeismicEventToHazardEvent } = require("../mappers/seismicMapper");
 const { upsertHazardEvent } = require("../store/canonicalStore");
+const { saveRejected } = require("../store/rejectedStore");
 const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { publishHazardEvent } = require("../broker/publisher");
 const { BadPayloadError } = require("../sources/httpClient");
