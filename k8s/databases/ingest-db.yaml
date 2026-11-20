@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: store-ingest-status
+  name: store-ingest
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
   clusterIP: None
   selector:
-    app: store-ingest-status
+    app: store-ingest
   ports:
     - port: 5432
       targetPort: 5432
@@ -14,18 +14,18 @@ spec:
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: store-ingest-status
+  name: store-ingest
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
-  serviceName: store-ingest-status
+  serviceName: store-ingest
   replicas: 1
   selector:
     matchLabels:
-      app: store-ingest-status
+      app: store-ingest
   template:
     metadata:
       labels:
-        app: store-ingest-status
+        app: store-ingest
         role: store
     spec:
       nodeSelector:
@@ -37,17 +37,17 @@ spec:
             - containerPort: 5432
           envFrom:
             - secretRef:
-                name: ingest-status-db-credentials
+                name: ingest-db-credentials
           startupProbe:
             exec:
-              command: ["pg_isready", "-U", "admin", "-d", "ingest-status"]
+              command: ["pg_isready", "-U", "admin", "-d", "ingest"]
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 5
             failureThreshold: 120
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "admin", "-d", "ingest-status"]
+              command: ["pg_isready", "-U", "admin", "-d", "ingest"]
             periodSeconds: 5
             timeoutSeconds: 5
           volumeMounts:
@@ -55,7 +55,7 @@ spec:
               mountPath: /var/lib/postgresql/data
             - name: init
               mountPath: /docker-entrypoint-initdb.d/001-init.sql
-              subPath: ingest-status-init.sql
+              subPath: ingest-init.sql
               readOnly: true
           resources:
             requests:
@@ -66,7 +66,7 @@ spec:
       volumes:
         - name: init
           configMap:
-            name: ingest-status-init
+            name: ingest-init
   volumeClaimTemplates:
     - metadata:
         name: data
