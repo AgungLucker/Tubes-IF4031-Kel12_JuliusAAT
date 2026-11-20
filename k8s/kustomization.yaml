@@ -16,6 +16,18 @@ configMapGenerator:
   - name: ingest-init
     files:
       - ingest-init.sql=databases/ingest-init.sql
+  - name: prometheus-config
+    files:
+      - prometheus.yml=monitoring/files/prometheus.yml
+  - name: grafana-datasources
+    files:
+      - prometheus.yml=monitoring/files/grafana-datasource.yml
+  - name: grafana-dashboard-provider
+    files:
+      - dashboards.yml=monitoring/files/grafana-dashboard-provider.yml
+  - name: grafana-dashboards
+    files:
+      - satellite-processor.json=monitoring/files/grafana-dashboards/satellite-processor.json
 
 # Manifests refer to local names (bnpb-*:dev); the cluster pulls them from GHCR.
 # Change newName/newTag here (or: kustomize edit set image) to switch registry.
@@ -88,3 +100,8 @@ resources:
   - network-policies/default-deny.yaml
   - network-policies/database-isolation.yaml
   - network-policies/application-traffic.yaml
+
+  - monitoring/grafana-secret.yaml
+  - monitoring/prometheus.yaml
+  - monitoring/grafana.yaml
+  - monitoring/network-policies.yaml
