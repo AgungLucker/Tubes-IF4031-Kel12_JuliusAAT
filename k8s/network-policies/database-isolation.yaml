@@ -103,12 +103,12 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: ingest-status-db-isolation
+  name: ingest-db-isolation
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
   podSelector:
     matchLabels:
-      app: store-ingest-status
+      app: store-ingest
   policyTypes:
     - Ingress
   ingress:

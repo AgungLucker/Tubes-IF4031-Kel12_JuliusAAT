@@ -6,7 +6,9 @@ const firesRouter = require("./routes/fires");
 const healthRouter = require("./routes/health");
 
 const { startFeedConsumer } = require("./feed/streamClient");
-const { startEventProcessor, handleFeedEvent, getResumeOffset } = require("./processing/eventProcessor");
+const { startEventProcessor, handleFeedEvent, getResumeOffset, getStats } = require("./processing/eventProcessor");
+const { getFeedHeadOffset } = require("./feed/sessionClient");
+const { httpMetrics, metricsHandler, registerGauges } = require("./metrics");
 
 const { log } = require("./logger");
 
@@ -28,6 +30,11 @@ app.use((req, res, next) => {
     });
     next();
 });
+
+app.use(httpMetrics);
+
+app.get("/metrics", metricsHandler);
+registerGauges({ getStats, getFeedHeadOffset });
 
 app.use("/health", healthRouter)
 app.use("/fires", authenticateApiKey, firesRouter);

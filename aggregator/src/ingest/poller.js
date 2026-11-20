@@ -2,6 +2,7 @@ const { pollBmkg } = require("./pollBmkg");
 const { pollPvmbg } = require("./pollPvmbg");
 const { pollSatellite } = require("./pollSatellite");
 const { getIngestStatus } = require("../store/ingestStatus");
+const { replayRetrying, replayParked } = require("./replayRejected");
 
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 3000);
 const EPOCH = new Date(0).toISOString();
@@ -24,11 +25,13 @@ async function runPollCycle() {
     await Promise.allSettled([
         pollBmkg(cursorFor.BMKG),
         pollPvmbg(cursorFor.PVMBG),
-        pollSatellite(cursorFor.SATELIT)
+        pollSatellite(cursorFor.SATELIT),
+        replayRetrying()
     ]);
 }
 
 function startPoller() {
+    replayParked().catch((error) => console.log(`[replay] parked gagal: ${error.message}`));
     runPollCycle();
     setInterval(runPollCycle, POLL_INTERVAL_MS);
 }

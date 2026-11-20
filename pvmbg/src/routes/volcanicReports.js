@@ -1,9 +1,29 @@
 const express = require('express');
 const pool = require('../db/connection');
 const { getOutageStatus } = require('./adminOutage');
-const { getConfidenceLevel } = require('./adminSchemaVersion');
+const { getConfidenceLevel, getBreaking } = require('./adminSchemaVersion');
+
 
 const router = express.Router();
+
+const TYPE_CONVERTERS = { string: String, number: Number, boolean: Boolean };
+
+function applyBreaking(report, { mode, field, to }) {
+  if (mode === 'rename') {
+    const { [field]: value, ...rest } = report;
+    return { ...rest, [to]: value };
+  }
+  if (mode === 'type_change') {
+    const value = report[field];
+    if (value == null || typeof value === to) return report;
+    return { ...report, [field]: TYPE_CONVERTERS[to](value) };
+  }
+  if (mode === 'drop_required') {
+    const { [field]: dropped, ...rest } = report;
+    return rest;
+  }
+  return report;
+}
 
 router.get('/', async (req, res) => {
   const since = req.query.since || new Date(0).toISOString();
@@ -31,7 +51,7 @@ router.get('/', async (req, res) => {
         report.confidence_level = row.confidence_level;
       }
 
-      return report;
+      return applyBreaking(report, getBreaking());
     });
 
     res.json(reports);
