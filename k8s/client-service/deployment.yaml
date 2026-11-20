@@ -33,6 +33,12 @@ spec:
               value: http://bnpb-token-service:8090
             - name: AGGREGATOR_URL
               value: http://aggregator:8090
+            - name: INTERNAL_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: bnpb-secrets
+                  key: INTERNAL_CLIENT_ID
+
             - name: UPSTREAM_TIMEOUT_MS
               value: "3000"
             - name: INTROSPECT_SERVICE_KEY
