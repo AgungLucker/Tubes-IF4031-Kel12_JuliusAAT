@@ -5,6 +5,7 @@ const { upsertHazardEvent } = require("../store/canonicalStore");
 const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { saveRejected } = require("../store/rejectedStore");
 const { publishHazardEvent } = require("../broker/publisher");
+const { BadPayloadError } = require("../sources/httpClient");
 
 async function processVolcanicReport(volcanicReport) {
     const reason = validateVolcanicReport(volcanicReport);
@@ -49,6 +50,15 @@ async function pollPvmbg(since) {
         await markPollSuccess("PVMBG", latestCursor);
         console.log(`[poll] PVMBG: ${volcanicReports.length} report(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
+        if (error instanceof BadPayloadError) {
+            await saveRejected({
+                source: "PVMBG",
+                rawPayload: error.raw,
+                reason: error.reason,
+                retryable: false,
+            }).catch((saveError) => console.log(`[poll] PVMBG: gagal menyimpan pesan rusak - ${saveError.message}`));
+        }
+
         await markPollError("PVMBG", error.message).catch(() => { });
         console.log(`[poll] PVMBG: GAGAL - ${error.message}`);
     }
