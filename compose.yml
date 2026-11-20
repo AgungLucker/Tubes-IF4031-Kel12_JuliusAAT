@@ -7,6 +7,8 @@ services:
         condition: service_healthy
       store-ingest:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy           
     develop:
       watch:
         - path: ./aggregator/src
@@ -243,6 +245,7 @@ services:
       - INTROSPECT_SERVICE_KEY=${INTROSPECT_SERVICE_KEY}
       - AGGREGATOR_URL=http://aggregator:8090
       - UPSTREAM_TIMEOUT_MS=3000
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     volumes:
       - ./bnpb-token/keys/public.pem:/app/keys/public.pem:ro
 

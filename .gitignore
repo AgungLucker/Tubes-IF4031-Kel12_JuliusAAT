@@ -1,4 +1,5 @@
 .env
 node_modules/
 generateCredentials.js
-bnpb-token/keys/private.pem
+bnpb-token/keys/*.pem
+*spesifikasi*.md

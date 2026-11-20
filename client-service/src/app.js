@@ -7,6 +7,7 @@ import { callJson } from './http.js';
 import { log } from './logger.js';
 // import rateLimit from 'express-rate-limit';
 import {verifyJwt, checkSession} from './auth.js';
+import { publishFieldReports } from './publisher.js';
 
 const HAZARD_TYPES = new Set(['SEISMIC', 'TSUNAMI', 'VOLCANIC', 'WILDFIRE', 'COASTAL']);
 const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
@@ -15,7 +16,7 @@ const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
 export function createApp({cfg, keys}) {
     const app = express();
     app.disable('x-powered-by');
-
+    app.use(express.json());
     app.use((req, res, next) => {
         req.cid = req.get('X-Correlation-ID') || randomUUID();
         res.set('X-Correlation-ID', req.cid);
@@ -64,6 +65,30 @@ export function createApp({cfg, keys}) {
         res.set('Cache-Control', 'no-store').json(body);
     });
 
+    app.post('/field-reports', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
+        if (req.auth.clientId === "lapangan-client"){
+            const reportId = req.get('Idempotency-Key') ?? req.body?.report_id ?? randomUUID();
+            try {
+                await publishFieldReports(req.body, String(reportId));
+
+                return res.status(202).json({
+                    message: "Report accepted",
+                    report_id: String(reportId)
+                });
+
+            } catch (err) {
+                return res.status(503).json({
+                    message: "Failed to publish report"
+                });
+            }
+        }
+        return res.status(403).json({
+            message: "Only lapangan-client allowed to post field report"
+        });
+
+    });
+
+    
     app.use((req, res) => res.status(404).json({ error: 'not_found' }));
 
     app.use((err, req, res, next) => {

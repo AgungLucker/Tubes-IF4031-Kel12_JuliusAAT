@@ -9,9 +9,11 @@ const analyticsRouter = require("./routes/analytics");
 const { startMigrationLoop } = require("./db/migrate");
 const { startPoller } = require("./ingest/poller");
 const { startPublisher } = require("./broker/publisher");
+const { runWithRetry: startFieldReportConsumer } = require("./consumer/consume");
 const { log } = require("./logger")
 
 startPublisher();
+startFieldReportConsumer();
 
 const app = express();
 
