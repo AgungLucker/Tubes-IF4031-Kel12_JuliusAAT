@@ -34,28 +34,28 @@ configMapGenerator:
 images:
   - name: bnpb-aggregator
     newName: ghcr.io/julius123123/bnpb-aggregator
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-pvmbg
     newName: ghcr.io/julius123123/bnpb-pvmbg
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-token
     newName: ghcr.io/julius123123/bnpb-token
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-dashboard
     newName: ghcr.io/julius123123/bnpb-dashboard
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-notifier
     newName: ghcr.io/julius123123/bnpb-notifier
-    newTag: dev
+    newTag: cf3dbe3
   - name: bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
-    newTag: dev
+    newTag: cf3dbe3
 
 generatorOptions:
   disableNameSuffixHash: true
