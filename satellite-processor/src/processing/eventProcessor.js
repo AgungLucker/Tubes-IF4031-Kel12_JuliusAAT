@@ -10,6 +10,7 @@ const { groupLinkedDetections, isLinked, LINK_MAX_TIME_DIFF_MS } = require("./cl
 const { resolveFireId } = require("./fireId");
 const { summarizeFire } = require("./fireSummary");
 const { log } = require("../logger");
+const { lateRejectedTotal, commitLatencySeconds } = require("../metrics");
 
 const LATENESS_LIMIT_MS = Number(process.env.LATENESS_LIMIT_MIN || 300) * 60 * 1000;
 const FLUSH_INTERVAL_MS = 1000;
@@ -28,6 +29,7 @@ const state = {
 };
 
 let flushing = false;
+let receivedAt = [];
 
 const toMs = (value) => new Date(value).getTime();
 const watermarkMs = () => (state.clockMs === null ? null : state.clockMs - LATENESS_LIMIT_MS);
@@ -60,6 +62,7 @@ async function loadState() {
     state.pendingDetections = new Map();
     state.pendingFires = new Map();
     state.failure = null;
+    receivedAt = [];
 }
 
 function classify(detection) {
@@ -75,12 +78,16 @@ function handleDetection(payload) {
 
     detection.detected_ms = toMs(detection.detected_at);
     detection.disposition = classify(detection);
+
     detection.fire_id = null;
     state.knownKeys.add(detection.detection_key);
     advanceClock(detection.detected_ms);
 
     state.pendingDetections.set(detection.detection_key, detection);
-    if (detection.disposition === "LATE_REJECTED") return;
+    if (detection.disposition === "LATE_REJECTED") {
+        lateRejectedTotal.inc();
+        return;
+    }
 
     state.detections.set(detection.detection_key, detection);
     if (detection.disposition === "ACCEPTED") attach(detection);
@@ -138,11 +145,15 @@ async function handleFeedEvent(event) {
     }
 
     const payload = JSON.parse(event.data);
+
     if (event.type === "detection") handleDetection(payload);
     else if (event.type === "update") handleUpdate(payload);
     else if (event.type === "retract") handleRetract(payload);
     else if (event.type === "heartbeat") handleHeartbeat(payload);
+
     state.offset = payload.offset;
+    receivedAt.push(process.hrtime.bigint());
+
 }
 
 const fireSignature = (fire) => JSON.stringify([
@@ -154,6 +165,7 @@ const fireSignature = (fire) => JSON.stringify([
 
 function setFireId(detection, fireId) {
     if (detection.fire_id === fireId) return;
+
     detection.fire_id = fireId;
     state.pendingDetections.set(detection.detection_key, detection);
 }
@@ -271,8 +283,17 @@ function buildBatch() {
 async function flush() {
     const batch = buildBatch();
     if (!batch) return;
+
+    const batchReceivedAt = receivedAt;
+    receivedAt = [];
+
     await commitBatch(batch);
     state.committedOffset = batch.offset;
+
+    const now = process.hrtime.bigint();
+    for (const received of batchReceivedAt) {
+        commitLatencySeconds.observe(Number(now - received) / 1e9);
+    }
 }
 
 async function startEventProcessor() {
@@ -295,4 +316,9 @@ function getResumeOffset() {
     return state.offset + 1;
 }
 
-module.exports = { startEventProcessor, handleFeedEvent, getResumeOffset };
+function getStats() {
+    return { committedOffset: state.committedOffset };
+}
+
+module.exports = { startEventProcessor, handleFeedEvent, getResumeOffset, getStats };
+
