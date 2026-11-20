@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: satellite-processor
-          image: bnpb-satellite-processor:dev
+          image: ghcr.io/julius123123/bnpb-pvmbg:dev
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8083
