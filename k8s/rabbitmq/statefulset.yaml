@@ -17,7 +17,7 @@ spec:
         role: broker
     spec:
       nodeSelector:
-        kubernetes.io/hostname: node-a
+        kubernetes.io/hostname: node-c
       containers:
         - name: rabbitmq
           image: rabbitmq:3-management
