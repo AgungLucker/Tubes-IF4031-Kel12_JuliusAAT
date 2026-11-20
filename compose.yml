@@ -244,6 +244,7 @@ services:
       - TOKEN_SERVICE_URL=http://bnpb-token-service:8090
       - INTROSPECT_SERVICE_KEY=${INTROSPECT_SERVICE_KEY}
       - AGGREGATOR_URL=http://aggregator:8090
+      - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
       - UPSTREAM_TIMEOUT_MS=3000
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     volumes:
