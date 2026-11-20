@@ -16,7 +16,11 @@ spec:
     spec:
       containers:
         - name: grafana
-          image: grafana/grafana:13.3.1
+          # 13.x boots an embedded unified-storage apiserver plus many app-platform controllers and
+          # never opened port 3000 on this loaded cluster (gRPC deadline exceeded). 11.5 boots in
+          # seconds and still loads our dashboard (schemaVersion 39, timeseries/stat panels only).
+          # If 11.5.2 cannot be pulled, 10.4.2 also works. The Compose file still uses 13.3.1.
+          image: grafana/grafana:11.5.2
           ports:
             - containerPort: 3000
           envFrom:
