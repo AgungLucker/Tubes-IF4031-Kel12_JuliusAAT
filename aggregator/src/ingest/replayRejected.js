@@ -1,5 +1,7 @@
 const { claimDue, markRecovered, markFailed } = require("../store/rejectedStore");
 const { processVolcanicReport } = require("./pollPvmbg");
+const { parseJson, BadPayloadError } = require("../sources/httpClient");
+
 
 const BATCH_SIZE = 500;
 
@@ -10,10 +12,12 @@ const PROCESSORS = {
 async function replayOne(message) {
     let result;
     try {
-        const payload = JSON.parse(message.raw_payload.toString("utf8"));
+        const payload = parseJson(message.raw_payload);
         result = await PROCESSORS[message.source](payload);
     } catch (error) {
-        result = { ok: false, reason: `system_error: ${error.message}`, retryable: true };
+        result = error instanceof BadPayloadError
+            ? { ok: false, reason: error.reason, retryable: false }
+            : { ok: false, reason: `system_error: ${error.message}`, retryable: true };
     }
 
     if (result.ok) {
