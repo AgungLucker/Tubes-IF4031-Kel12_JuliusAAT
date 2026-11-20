@@ -27,3 +27,9 @@ CREATE TABLE IF NOT EXISTS rejected_messages (
 
 CREATE INDEX IF NOT EXISTS idx_rejected_replay ON rejected_messages (status, next_attempt_at);
 
+
+CREATE TABLE IF NOT EXISTS field_reports (
+    report_id    TEXT PRIMARY KEY,
+    payload      JSONB NOT NULL,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

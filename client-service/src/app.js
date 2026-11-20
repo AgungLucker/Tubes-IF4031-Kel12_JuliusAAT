@@ -6,26 +6,27 @@ import { HttpError } from './error.js';
 import { callJson } from './http.js';
 import { log } from './logger.js';
 // import rateLimit from 'express-rate-limit';
-import {verifyJwt, checkSession} from './auth.js';
+import { verifyJwt, checkSession } from './auth.js';
+import { publishFieldReports } from './publisher.js';
 
 const HAZARD_TYPES = new Set(['SEISMIC', 'TSUNAMI', 'VOLCANIC', 'WILDFIRE', 'COASTAL']);
 const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
 
 
-export function createApp({cfg, keys}) {
+export function createApp({ cfg, keys }) {
     const app = express();
     app.disable('x-powered-by');
-
+    app.use(express.json());
     app.use((req, res, next) => {
         req.cid = req.get('X-Correlation-ID') || randomUUID();
         res.set('X-Correlation-ID', req.cid);
         const start = process.hrtime.bigint();
         res.on('finish', () => {
-        log.info({
-            event: 'request', correlation_id: req.cid, method: req.method, path: req.path,
-            status: res.statusCode, client_id: req.auth?.clientId,
-            latency_ms: Number(process.hrtime.bigint() - start) / 1e6,
-        });
+            log.info({
+                event: 'request', correlation_id: req.cid, method: req.method, path: req.path,
+                status: res.statusCode, client_id: req.auth?.clientId,
+                latency_ms: Number(process.hrtime.bigint() - start) / 1e6,
+            });
         });
         next();
     });
@@ -34,7 +35,7 @@ export function createApp({cfg, keys}) {
 
     app.get('/data', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
         const fields = resolveFields(req.auth.scope, req.query.fields);
-        const {hazard_type, source} = req.query;
+        const { hazard_type, source } = req.query;
 
         if (hazard_type !== undefined && !HAZARD_TYPES.has(hazard_type)) {
             throw new HttpError(400, 'invalid_request', `hazard_type must be one of: ${[...HAZARD_TYPES].join(', ')}`);
@@ -49,12 +50,13 @@ export function createApp({cfg, keys}) {
         const qs = params.size ? `?${params}` : '';
         let r;
 
-        try{
+        try {
             r = await callJson('aggregator', `${cfg.aggregatorUrl}/hazard-events${qs}`, {
-                cid: req.cid, timeoutMs: cfg.upstreamTimeoutMs,});
+                cid: req.cid, timeoutMs: cfg.upstreamTimeoutMs,
+            });
 
-        } catch{
-                  throw new HttpError(503, 'upstream_unavailable', 'Aggregator unavailable');
+        } catch {
+            throw new HttpError(503, 'upstream_unavailable', 'Aggregator unavailable');
         }
 
         if (r.status === 429) throw new HttpError(429, 'rate_limited', 'Too many requests');
@@ -64,15 +66,71 @@ export function createApp({cfg, keys}) {
         res.set('Cache-Control', 'no-store').json(body);
     });
 
+    app.get('/rejected-messages', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
+        if (req.auth.clientId !== cfg.internalClientId) {
+            throw new HttpError(403, 'forbidden', 'Only internal client allowed to read rejected messages');
+        }
+
+        const { source, limit, cursor } = req.query;
+        if (source !== undefined && !SOURCES.has(source)) {
+            throw new HttpError(400, 'invalid_request', `source must be one of: ${[...SOURCES].join(', ')}`);
+        }
+
+        const params = new URLSearchParams();
+        if (source) params.set('source', source);
+        if (limit) params.set('limit', limit);
+        if (cursor) params.set('cursor', cursor);
+        const qs = params.size ? `?${params}` : '';
+        let r;
+
+        try {
+            r = await callJson('aggregator', `${cfg.aggregatorUrl}/rejected-messages${qs}`, {
+                cid: req.cid, timeoutMs: cfg.upstreamTimeoutMs,
+            });
+        } catch {
+            throw new HttpError(503, 'upstream_unavailable', 'Aggregator unavailable');
+        }
+
+        if (r.status === 429) throw new HttpError(429, 'rate_limited', 'Too many requests');
+        if (r.status === 400) throw new HttpError(400, 'invalid_request', r.data?.error?.message ?? 'Invalid request');
+        if (r.status !== 200) throw new HttpError(503, 'upstream_unavailable', 'Aggregator unavailable');
+
+        res.set('Cache-Control', 'no-store').json({ items: r.data.items, next_cursor: r.data.next_cursor });
+    })
+
+    app.post('/field-reports', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
+        if (req.auth.clientId === "lapangan-client") {
+            const reportId = req.get('Idempotency-Key') ?? req.body?.report_id ?? randomUUID();
+            try {
+                await publishFieldReports(req.body, String(reportId));
+
+                return res.status(202).json({
+                    message: "Report accepted",
+                    report_id: String(reportId)
+                });
+
+            } catch (err) {
+                return res.status(503).json({
+                    message: "Failed to publish report"
+                });
+            }
+        }
+        return res.status(403).json({
+            message: "Only lapangan-client allowed to post field report"
+        });
+
+    });
+
+
     app.use((req, res) => res.status(404).json({ error: 'not_found' }));
 
     app.use((err, req, res, next) => {
-    if (err instanceof HttpError)
-      return res.status(err.status).json({ error: err.code, error_description: err.message });
-    log.error({ event: 'unhandled', correlation_id: req.cid, message: err.message });
-    res.status(500).json({ error: 'server_error' });
-  });
+        if (err instanceof HttpError)
+            return res.status(err.status).json({ error: err.code, error_description: err.message });
+        log.error({ event: 'unhandled', correlation_id: req.cid, message: err.message });
+        res.status(500).json({ error: 'server_error' });
+    });
 
-  return app;
+    return app;
 
 }

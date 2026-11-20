@@ -10,6 +10,7 @@ export function loadConfig(env = process.env) {
     tokenServiceUrl: env.TOKEN_SERVICE_URL,
     introspectServiceKey: env.INTROSPECT_SERVICE_KEY,
     aggregatorUrl: env.AGGREGATOR_URL,
+    internalClientId: env.INTERNAL_CLIENT_ID,
     upstreamTimeoutMs: parseInt(env.UPSTREAM_TIMEOUT_MS || '3000', 10),
   };
 }
