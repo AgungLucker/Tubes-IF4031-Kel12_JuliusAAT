@@ -275,7 +275,6 @@ services:
       - PORT=8101
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
 
-
   consumer-notifier:
     build: ./consumer/notifier
     networks: [app_net]
@@ -291,6 +290,16 @@ services:
       - QUEUE_NAME=notifier
       - BINDINGS=hazard.*.siaga,hazard.*.awas
       - NOTIFY_DELAY_MS=0
+    
+  prometheus:
+    image: prom/prometheus:v3.13.5
+    networks: [app_net]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
 
 volumes:
   aggregator-data:
@@ -299,6 +308,7 @@ volumes:
   bmkg-data:
   token-db-data:
   satellite-data:
+  prometheus-data:
 
 networks:
   app_net:
