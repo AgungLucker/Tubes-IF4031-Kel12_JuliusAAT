@@ -34,6 +34,15 @@ async function pollSatellite(since) {
         await markPollSuccess("SATELIT", latestCursor);
         console.log(`[poll] SATELIT: ${fires.length} fire(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
+        if (error instanceof BadPayloadError) {
+            await saveRejected({
+                source: "SATELIT",
+                rawPayload: error.raw,
+                reason: error.reason,
+                retryable: false,
+            }).catch((saveError) => console.log(`[poll] SATELIT: gagal menyimpan pesan rusak - ${saveError.message}`));
+        }
+
         await markPollError("SATELIT", error.message).catch(() => { });
         console.log(`[poll] SATELIT: GAGAL - ${error.message}`);
     }

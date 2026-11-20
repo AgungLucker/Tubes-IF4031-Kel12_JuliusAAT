@@ -4,8 +4,6 @@ const { upsertHazardEvent } = require("../store/canonicalStore");
 const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { publishHazardEvent } = require("../broker/publisher");
 
-
-
 function mapTsunamiWarningByEventId(tsunamiWarnings) {
     const map = {};
     for (const tsunamiWarning of tsunamiWarnings) {
@@ -40,7 +38,16 @@ async function pollBmkg(since) {
         await markPollSuccess("BMKG", latestCursor);
         console.log(`[poll] BMKG: ${events.length} event(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
-        await markPollError("BMKG", error.message).catch(() => {});
+        if (error instanceof BadPayloadError) {
+            await saveRejected({
+                source: "BMKG",
+                rawPayload: error.raw,
+                reason: error.reason,
+                retryable: false,
+            }).catch((saveError) => console.log(`[poll] BMKG: gagal menyimpan pesan rusak - ${saveError.message}`));
+        }
+
+        await markPollError("BMKG", error.message).catch(() => { });
         console.log(`[poll] BMKG: GAGAL - ${error.message}`);
     }
 }
