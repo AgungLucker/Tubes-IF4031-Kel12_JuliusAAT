@@ -47,6 +47,11 @@ spec:
                 secretKeyRef:
                   name: bnpb-secrets
                   key: SATELLITE_PROCESSOR_API_KEY
+            - name: OTEL_SERVICE_NAME
+              value: satellite-processor
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger:4318
+
           readinessProbe:
             httpGet:
               path: /health

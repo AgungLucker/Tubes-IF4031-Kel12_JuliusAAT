@@ -137,6 +137,10 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-credentials
                   key: RABBITMQ_URL
+            - name: OTEL_SERVICE_NAME
+              value: aggregator
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger:4318
 
           resources:
             requests:
