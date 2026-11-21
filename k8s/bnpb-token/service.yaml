@@ -11,3 +11,20 @@ spec:
       port: 8090
       targetPort: 8090
   type: ClusterIP
+
+---
+# Headless: DNS mengembalikan IP tiap pod agar Prometheus scrape setiap replika secara terpisah.
+apiVersion: v1
+kind: Service
+metadata:
+  name: bnpb-token-service-metrics
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: bnpb-token-service
+  ports:
+    - name: http
+      port: 8090
+      targetPort: 8090
