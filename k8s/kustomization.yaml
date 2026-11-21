@@ -37,10 +37,10 @@ images:
     newTag: d78848f
   - name: ghcr.io/julius123123/bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
-    newTag: cf3dbe3
+    newTag: 68d8fca
   - name: ghcr.io/julius123123/bnpb-pvmbg
     newName: ghcr.io/julius123123/bnpb-pvmbg
-    newTag: cf3dbe3
+    newTag: 68d8fca
   - name: ghcr.io/julius123123/bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
     newTag: 43c5204
