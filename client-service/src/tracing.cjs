@@ -9,7 +9,7 @@ const sdk = new NodeSDK({
     traceExporter: new OTLPTraceExporter(),
     instrumentations: [
         new HttpInstrumentation({
-            ignoreIncomingRequestHook: (req) => req.url === "/health",
+            ignoreIncomingRequestHook: (req) => req.url === "/health" || req.url === "/metrics",
         }),
         new ExpressInstrumentation(),
         new UndiciInstrumentation(),

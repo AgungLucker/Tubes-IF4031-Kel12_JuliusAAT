@@ -10,7 +10,7 @@ const sdk = new NodeSDK({
     traceExporter: new OTLPTraceExporter(),
     instrumentations: [
         new HttpInstrumentation({
-            ignoreIncomingRequestHook: (req) => req.url.startsWith("/health"),
+            ignoreIncomingRequestHook: (req) => req.url.startsWith("/health") || req.url === "/metrics",
         }),
         new ExpressInstrumentation(),
         new PgInstrumentation({ requireParentSpan: true }),
