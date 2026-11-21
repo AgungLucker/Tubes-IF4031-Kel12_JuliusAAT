@@ -42,10 +42,10 @@ images:
     newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
-    newTag: 68d8fca
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-pvmbg
     newName: ghcr.io/julius123123/bnpb-pvmbg
-    newTag: 68d8fca
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
     newTag: 1cb6344
@@ -54,10 +54,10 @@ images:
     newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-dashboard
     newName: ghcr.io/julius123123/bnpb-dashboard
-    newTag: cf3dbe3
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-notifier
     newName: ghcr.io/julius123123/bnpb-notifier
-    newTag: cf3dbe3
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
     newTag: 1cb6344
