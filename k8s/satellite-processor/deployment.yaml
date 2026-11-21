@@ -25,6 +25,8 @@ spec:
               value: "8083"
             - name: LATENESS_LIMIT_MIN
               value: "300"
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=384"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -53,6 +55,6 @@ spec:
             timeoutSeconds: 5
           resources:
             requests:
-              memory: "64Mi"
+              memory: "128Mi"
             limits:
-              memory: "192Mi"
+              memory: "512Mi"
