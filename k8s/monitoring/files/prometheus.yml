@@ -5,3 +5,9 @@ scrape_configs:
   - job_name: satellite-processor
     static_configs:
     - targets: ["satellite-processor:8083"]
+
+  - job_name: aggregator
+    dns_sd_configs:
+      - names: ["aggregator-pods.sistem-informasi-kebencanaan-bnpb.svc.cluster.local"]
+        type: A
+        port: 8090

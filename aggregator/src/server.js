@@ -13,6 +13,7 @@ const { state, startShardMonitor } = require("./lifecycle");
 const { startPublisher } = require("./broker/publisher");
 const { runWithRetry: startFieldReportConsumer } = require("./consumer/consume");
 const { log } = require("./logger")
+const metrics = require("./metrics");
 
 startPublisher();
 startFieldReportConsumer();
@@ -39,10 +40,12 @@ app.use((req, res, next) => {
 });
 
 app.use("/health", healthRouter)
+app.get("/metrics", (req, res) => res.type("text/plain; version=0.0.4").send(metrics.render()));
 
 const limiter = rateLimit({
     windowMs: 1000,
-    max: 100,
+    max: Number(process.env.RATE_LIMIT_PER_SEC || 100),
+    skip: (req) => req.get("X-Client-Priority") === "high",
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many requests" }

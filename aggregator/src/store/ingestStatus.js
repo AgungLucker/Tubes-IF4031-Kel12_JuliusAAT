@@ -1,8 +1,3 @@
-// tabel ingest statusdisimpan di DB tersendiri (store-ingest), terpisah dari shard HazardEvent,
-// sehingga state polling tidak ikut hilang/berpindah saat shard rebalance atau satu node shard mati.
-//
-// DB ini juga satu-satunya sumber kebenaran waktu untuk leader election (lihat
-// src/coordination/lease.js): lease dan epoch disimpan di sini dan dibandingkan dengan jam DB.
 const { makePool } = require("../db/shards");
 const { FencedError } = require("../coordination/errors");
 const { LeaseStore } = require("../coordination/lease");
@@ -31,8 +26,6 @@ async function getCursor(source) {
     return rows[0]?.last_cursor ? new Date(rows[0].last_cursor).toISOString() : new Date(0).toISOString();
 }
 
-// lease = { holder, epoch } milik leader. Pembaruan kursor dan pemeriksaan lease dilakukan dalam
-// SATU pernyataan SQL, jadi instance yang sudah disalip tidak pernah bisa memajukan kursor.
 async function markPollSuccess(source, cursor, lease = null) {
     if (!lease) {
         await pool.query(
@@ -64,4 +57,10 @@ async function markPollError(source, message, lease = null) {
     );
 }
 
-module.exports = { getIngestStatus, getCursor, markPollSuccess, markPollError, pool, leases };
+// Cursor of a source whose paging token is opaque (Sensor Pantai), not a timestamp.
+async function getRawCursor(source) {
+    const { rows } = await pool.query("SELECT last_cursor FROM ingest_status WHERE source = $1", [source]);
+    return rows[0]?.last_cursor ?? null;
+}
+
+module.exports = { getIngestStatus, getCursor, getRawCursor, markPollSuccess, markPollError, pool, leases };

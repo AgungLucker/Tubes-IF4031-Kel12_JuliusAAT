@@ -11,6 +11,9 @@ export function loadConfig(env = process.env) {
     introspectServiceKey: env.INTROSPECT_SERVICE_KEY,
     aggregatorUrl: env.AGGREGATOR_URL,
     internalClientId: env.INTERNAL_CLIENT_ID,
+    lapanganClientId: env.LAPANGAN_CLIENT_ID || "lapangan-client",
+    maxInflight: parseInt(env.CLIENT_MAX_INFLIGHT || "200", 10),
+    mediaShare: parseFloat(env.CLIENT_MEDIA_SHARE || "0.6"),
     upstreamTimeoutMs: parseInt(env.UPSTREAM_TIMEOUT_MS || '3000', 10),
   };
 }

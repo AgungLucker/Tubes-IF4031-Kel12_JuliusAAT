@@ -82,9 +82,9 @@ test("readiness, forced unready, and graceful shutdown of the real server", { sk
 
         // ---- one leader per lease, held by one of the two servers
         const holders = async () => (await ingest.query("SELECT name, holder, epoch, (lease_until > now()) AS live FROM ingest_lease ORDER BY name")).rows;
-        await waitFor(async () => (await holders()).length === 4, { label: "4 leases" });
+        await waitFor(async () => (await holders()).length === 5, { label: "5 leases" });
         const leases = await holders();
-        assert.deepEqual(leases.map((l) => l.name), ["BMKG", "PVMBG", "REPLAY", "SATELIT"]);
+        assert.deepEqual(leases.map((l) => l.name), ["BMKG", "OUTBOX", "PVMBG", "REPLAY", "SATELIT"]);
         assert.ok(leases.every((l) => l.live && /^agg-[AB]\./.test(l.holder)));
 
         // ---- forced unhealthy: the load balancer must stop routing here, liveness must NOT fail

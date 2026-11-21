@@ -81,6 +81,14 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: PANTAI_BASE_URL
+              value: "http://sensor-pantai:8080"
+            - name: PANTAI_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: pantai-token
+                  key: token
+                  optional: true   # without the secret the aggregator simply does not poll the sensor
             - name: LEASE_TTL_SECONDS
               value: "15"
             - name: SHUTDOWN_DRAIN_MS

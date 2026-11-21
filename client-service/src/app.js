@@ -8,6 +8,7 @@ import { log } from './logger.js';
 // import rateLimit from 'express-rate-limit';
 import { verifyJwt, checkSession } from './auth.js';
 import { publishFieldReports } from './publisher.js';
+import { createShedder, prioritize } from './shed.js';
 
 const HAZARD_TYPES = new Set(['SEISMIC', 'TSUNAMI', 'VOLCANIC', 'WILDFIRE', 'COASTAL']);
 const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
@@ -15,6 +16,7 @@ const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
 
 export function createApp({ cfg, keys }) {
     const app = express();
+    const shedder = createShedder({ maxInflight: cfg.maxInflight, mediaShare: cfg.mediaShare });
     app.disable('x-powered-by');
     app.use(express.json());
     app.use((req, res, next) => {
@@ -32,8 +34,9 @@ export function createApp({ cfg, keys }) {
     });
 
     app.get('/health', (req, res) => res.json({ status: 'ok', service: 'client-service' }));
+    app.get('/health/load', (req, res) => res.json(shedder.stats()));
 
-    app.get('/data', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
+    app.get('/data', verifyJwt(cfg), prioritize(cfg), shedder.admit, checkSession(cfg), async (req, res) => {
         const fields = resolveFields(req.auth.scope, req.query.fields);
         const { hazard_type, source } = req.query;
 
@@ -53,6 +56,7 @@ export function createApp({ cfg, keys }) {
         try {
             r = await callJson('aggregator', `${cfg.aggregatorUrl}/hazard-events${qs}`, {
                 cid: req.cid, timeoutMs: cfg.upstreamTimeoutMs,
+                headers: { 'X-Client-Priority': req.priority },
             });
 
         } catch {
@@ -63,6 +67,7 @@ export function createApp({ cfg, keys }) {
 
         const body = { data: r.data.data.map((row) => project(row, fields)) };
         if (r.data.stale_since) body.stale_since = r.data.stale_since;
+        if (r.data.source_status) body.source_status = r.data.source_status;
         res.set('Cache-Control', 'no-store').json(body);
     });
 

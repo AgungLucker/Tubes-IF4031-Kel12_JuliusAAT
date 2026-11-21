@@ -63,7 +63,30 @@ async function publishHazardEvent(event) {
     )
 }
 
+function publishConfirmed(event, { routingKey, messageId, timeoutMs = 3000 }) {
+    return new Promise((resolve, reject) => {
+        if (!channel) return reject(new Error("RabbitMQ belum terhubung"));
+        const timer = setTimeout(() => reject(new Error("publish confirm timeout")), timeoutMs);
+        channel.publish(
+            EXCHANGE_NAME,
+            routingKey,
+            Buffer.from(JSON.stringify(event)),
+            {
+                persistent: true,
+                messageId,
+                contentType: "application/json",
+                headers: { correlation_id: messageId },
+            },
+            (err) => {
+                clearTimeout(timer);
+                if (err) reject(err); else resolve();
+            }
+        );
+    });
+}
+
 module.exports = {
     startPublisher,
-    publishHazardEvent
+    publishHazardEvent,
+    publishConfirmed
 };

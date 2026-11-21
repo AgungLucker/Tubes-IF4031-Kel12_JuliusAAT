@@ -7,9 +7,34 @@ const router = express.Router();
 
 const STALE_THRESHOLD_MS = Number(process.env.POLL_INTERVAL_MS || 3000) * 2;
 
+// Source health is read from the shared ingest status (written by whichever instance leads that
+// source), never from the sensor itself: the answer is local, fast, and still correct while the
+// sensor is down. Cached for a second so a request burst does not become a query burst.
+const PANTAI_STALE_AFTER_MS = Number(process.env.PANTAI_STALE_AFTER_MS || 15000);
+let statusCache = { at: 0, rows: [] };
+async function cachedStatuses() {
+    if (Date.now() - statusCache.at > 1000) statusCache = { at: Date.now(), rows: await getIngestStatus() };
+    return statusCache.rows;
+}
+
+// "ok" | "stale" | "unknown", plus the time of the last good poll, for the sensor-dependent part
+// of a response.
+async function sensorStatus() {
+    try {
+        const row = (await cachedStatuses()).find((s) => s.source === "SENSOR_PANTAI");
+        if (!row?.last_success_at) return { status: "unknown" };
+        const last = new Date(row.last_success_at);
+        return Date.now() - last.getTime() > PANTAI_STALE_AFTER_MS
+            ? { status: "stale", stale_since: last.toISOString() }
+            : { status: "ok", last_success_at: last.toISOString() };
+    } catch {
+        return { status: "unknown" };
+    }
+}
+
 async function staleSince() {
     try {
-        const statuses = await getIngestStatus();
+        const statuses = await cachedStatuses();
         const pvmbg = statuses.find((s) => s.source === "PVMBG");
         if (!pvmbg?.last_success_at) return undefined;
         const last = new Date(pvmbg.last_success_at);
@@ -51,6 +76,9 @@ router.get("/", async (req, res) => {
     if (!hazardType || hazardType === "VOLCANIC") {
         const stale = await staleSince();
         if (stale) response.stale_since = stale;
+    }
+    if ((!hazardType || hazardType === "COASTAL") && (!source || source === "SENSOR_PANTAI")) {
+        response.source_status = { SENSOR_PANTAI: await sensorStatus() };
     }
     res.status(200).json(response);
 });

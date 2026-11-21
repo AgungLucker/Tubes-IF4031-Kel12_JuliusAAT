@@ -69,6 +69,11 @@ resources:
   - aggregator/deployment.yaml
   - aggregator/service.yaml
   - aggregator/pdb.yaml
+  - aggregator/service-headless.yaml
+
+  - sensor-pantai/deployment.yaml
+  - sensor-pantai/service.yaml
+  - sensor-pantai/network-policy.yaml
 
   - bmkg/deployment.yaml
   - bmkg/service.yaml
