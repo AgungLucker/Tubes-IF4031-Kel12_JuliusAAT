@@ -227,6 +227,8 @@ services:
       - LAPANGAN_CLIENT_SECRET=${LAPANGAN_CLIENT_SECRET}
       - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
       - INTERNAL_CLIENT_SECRET=${INTERNAL_CLIENT_SECRET}
+      - OTEL_SERVICE_NAME=bnpb-token-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     volumes:
       - ./bnpb-token/keys:/app/keys:ro
 
