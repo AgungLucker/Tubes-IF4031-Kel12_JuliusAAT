@@ -97,19 +97,21 @@ async function upsertDetections(client, detections) {
 }
 
 
-async function listFires({ since } = {}) {
+async function listFires({ since, afterId = "", limit } = {}) {
     const result = await pool.query(
         `SELECT f.*,
                 COALESCE((SELECT array_agg(d.detection_key ORDER BY d.detection_key)
                             FROM detections d
                            WHERE d.fire_id = f.fire_id AND d.disposition = 'ACCEPTED'), '{}') AS detection_keys
            FROM fires f
-          WHERE f.updated_at >= $1
-          ORDER BY f.updated_at ASC`,
-        [since || new Date(0).toISOString()]
+          WHERE (date_trunc('milliseconds', f.updated_at), f.fire_id) > ($1::timestamptz, $2::text)
+          ORDER BY date_trunc('milliseconds', f.updated_at) ASC, f.fire_id ASC
+          LIMIT $3`,
+        [since || new Date(0).toISOString(), afterId, limit]
     );
     return result.rows;
 }
+
 
 async function getOpenDetections(since) {
     const result = await pool.query(
