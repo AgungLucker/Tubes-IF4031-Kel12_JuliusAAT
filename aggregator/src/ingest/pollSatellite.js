@@ -37,10 +37,12 @@ async function pollSatellite(since, ctx = null) {
 
         await markPollSuccess("SATELIT", latestCursor, ctx);
         console.log(`[poll] SATELIT: ${fires.length} fire(s) diproses, cursor=${latestCursor}`);
+
+        return "success";
     } catch (error) {
         if (error instanceof FencedError) {
             console.log(`[poll] SATELIT: dihentikan, leader sudah digantikan - ${error.message}`);
-            return;
+            return "fenced";
         }
         if (error instanceof BadPayloadError) {
             await saveRejected({
@@ -53,6 +55,7 @@ async function pollSatellite(since, ctx = null) {
 
         await markPollError("SATELIT", error.message, ctx).catch(() => { });
         console.log(`[poll] SATELIT: GAGAL - ${error.message}`);
+        return "error";
     }
 }
 

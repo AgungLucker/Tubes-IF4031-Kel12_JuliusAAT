@@ -43,10 +43,11 @@ async function pollBmkg(since, ctx = null) {
         }
         await markPollSuccess("BMKG", latestCursor, ctx);
         console.log(`[poll] BMKG: ${events.length} event(s) diproses, cursor=${latestCursor}`);
+        return "success";
     } catch (error) {
         if (error instanceof FencedError) {
             console.log(`[poll] BMKG: dihentikan, leader sudah digantikan - ${error.message}`);
-            return;
+            return "fenced";
         }
         if (error instanceof BadPayloadError) {
             await saveRejected({
@@ -59,6 +60,7 @@ async function pollBmkg(since, ctx = null) {
 
         await markPollError("BMKG", error.message, ctx).catch(() => { });
         console.log(`[poll] BMKG: GAGAL - ${error.message}`);
+        return "error";
     }
 }
 

@@ -53,10 +53,12 @@ async function pollPvmbg(since, ctx = null) {
 
         await markPollSuccess("PVMBG", latestCursor, ctx);
         console.log(`[poll] PVMBG: ${volcanicReports.length} report(s) diproses, cursor=${latestCursor}`);
+
+        return "success";
     } catch (error) {
         if (error instanceof FencedError) {
             console.log(`[poll] PVMBG: dihentikan, leader sudah digantikan - ${error.message}`);
-            return;
+            return "fenced";
         }
         if (error instanceof BadPayloadError) {
             await saveRejected({
@@ -69,6 +71,7 @@ async function pollPvmbg(since, ctx = null) {
 
         await markPollError("PVMBG", error.message, ctx).catch(() => { });
         console.log(`[poll] PVMBG: GAGAL - ${error.message}`);
+        return "error";
     }
 }
 

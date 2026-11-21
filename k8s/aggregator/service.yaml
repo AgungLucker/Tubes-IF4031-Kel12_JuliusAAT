@@ -11,3 +11,19 @@ spec:
       port: 8090
       targetPort: 8090
   type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aggregator-metrics
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None                 
+  publishNotReadyAddresses: true   
+  selector:
+    app: aggregator
+  ports:
+    - name: http
+      port: 8090
+      targetPort: 8090

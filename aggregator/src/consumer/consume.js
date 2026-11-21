@@ -1,6 +1,7 @@
 const { pool } = require("../store/ingestStatus");
 const amqp = require("amqplib");
 const crypto = require("crypto");
+const {fieldReportsTotal} = require("../metrics");
 
 const EXCHANGE = "field-reports";
 const QUEUE = "report-queue";
@@ -44,7 +45,10 @@ async function startConsumer() {
             log({ event: inserted ? "consumed" : "duplicate_skipped", correlation_id,
                   report_id: reportId, redelivered: msg.fields.redelivered });
             ch.ack(msg);
+            fieldReportsTotal.inc({result:inserted ? "stored" : "duplicate"});
+
         } catch {
+            fieldReportsTotal.inc({result: "failed"});
             setTimeout(() => {
                 try { ch.nack(msg, false, true); } catch {  }
             }, 2000);
