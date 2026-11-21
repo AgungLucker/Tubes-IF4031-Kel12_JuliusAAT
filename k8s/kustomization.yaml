@@ -34,7 +34,7 @@ configMapGenerator:
 images:
   - name: ghcr.io/julius123123/bnpb-aggregator
     newName: ghcr.io/julius123123/bnpb-aggregator
-    newTag: cf3dbe3
+    newTag: ed536ce
   - name: ghcr.io/julius123123/bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
     newTag: cf3dbe3
