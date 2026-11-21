@@ -39,6 +39,15 @@ export const upstreamDuration = new client.Histogram({
     registers: [register],
 });
 
+export const shedTotal = new client.Counter({
+    name: 'client_service_shed_total',
+    help: 'Requests refused by load shedding (429), per priority class (high = Tim Lapangan/internal, low = Media)',
+    labelNames: ['priority'],
+    registers: [register],
+});
+shedTotal.inc({ priority: 'high' }, 0);
+shedTotal.inc({ priority: 'low' }, 0);
+
 export const fieldReportsTotal = new client.Counter({
     name: 'client_service_field_reports_total',
     help: 'POST /field-reports outcomes (accepted|broker_unavailable|forbidden)',

@@ -1458,6 +1458,638 @@
           "legendFormat": "{{pod}}"
         }
       ]
+    },
+    {
+      "id": 33,
+      "type": "row",
+      "title": "Sensor Pantai & jalur peringatan kritis",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 92,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 34,
+      "type": "stat",
+      "title": "Circuit breaker sensor",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 93,
+        "w": 5,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "CLOSED",
+                  "color": "green"
+                },
+                "1": {
+                  "text": "HALF-OPEN",
+                  "color": "orange"
+                },
+                "2": {
+                  "text": "OPEN",
+                  "color": "red"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 2
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(pantai_breaker_state{service=\"aggregator\",pod=~\"$pod\"})",
+          "legendFormat": "state"
+        }
+      ],
+      "description": "0 = closed (normal), 1 = half-open (probe), 2 = open (sensor tidak dipanggil). Nilai maksimum antar pod; hanya pemimpin lease SENSOR_PANTAI yang bergerak."
+    },
+    {
+      "id": 35,
+      "type": "stat",
+      "title": "Alert kritis menunggu di outbox",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 5,
+        "y": 93,
+        "w": 5,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(critical_outbox_pending{service=\"aggregator\",pod=~\"$pod\"})",
+          "legendFormat": "pending"
+        }
+      ],
+      "description": "Alert kritis yang sudah diterima tetapi belum dikonfirmasi RabbitMQ. Harus kembali ke 0."
+    },
+    {
+      "id": 36,
+      "type": "stat",
+      "title": "Alert tertua belum terkirim",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 93,
+        "w": 5,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(critical_outbox_oldest_seconds{service=\"aggregator\",pod=~\"$pod\"})",
+          "legendFormat": "umur"
+        }
+      ],
+      "description": "Umur alert kritis tertua yang belum terkirim. Target latensi p95 alert adalah 5 detik."
+    },
+    {
+      "id": 37,
+      "type": "stat",
+      "title": "Alert kritis diterbitkan (15m)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 15,
+        "y": 93,
+        "w": 5,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(critical_alerts_published_total{service=\"aggregator\",pod=~\"$pod\"}[15m]))) or vector(0)",
+          "legendFormat": "terbit"
+        }
+      ],
+      "description": "Alert kritis yang dikonfirmasi broker dalam 15 menit."
+    },
+    {
+      "id": 38,
+      "type": "stat",
+      "title": "Gagal terbit (15m)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 93,
+        "w": 4,
+        "h": 5
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "auto",
+        "orientation": "auto"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(critical_alert_publish_failures_total{service=\"aggregator\",pod=~\"$pod\"}[15m]))) or vector(0)",
+          "legendFormat": "gagal"
+        }
+      ],
+      "description": "Percobaan publish yang gagal (broker mati); alert tetap di outbox dan dicoba lagi."
+    },
+    {
+      "id": 39,
+      "type": "timeseries",
+      "title": "Permintaan ke sensor per hasil",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 98,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (kind, outcome) (rate(pantai_upstream_requests_total{service=\"aggregator\",pod=~\"$pod\"}[1m]))",
+          "legendFormat": "{{kind}} / {{outcome}}"
+        },
+        {
+          "refId": "B",
+          "expr": "sum by (kind) (rate(pantai_upstream_skipped_total{service=\"aggregator\",pod=~\"$pod\"}[1m]))",
+          "legendFormat": "{{kind}} / dilewati (breaker open)"
+        }
+      ],
+      "description": "Saat breaker open, permintaan sungguhan turun ke 0 dan hanya probe berjeda yang lewat; seri dilewati menunjukkan panggilan yang dicegah."
+    },
+    {
+      "id": 40,
+      "type": "timeseries",
+      "title": "Transisi breaker (15m)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 98,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (to) (increase(pantai_breaker_transitions_total{service=\"aggregator\",pod=~\"$pod\"}[15m]))",
+          "legendFormat": "menjadi {{to}}"
+        }
+      ],
+      "description": "Berapa kali breaker berpindah keadaan."
+    },
+    {
+      "id": 41,
+      "type": "timeseries",
+      "title": "Observasi diterima vs ditolak",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 106,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (result) (rate(pantai_observations_total{service=\"aggregator\",pod=~\"$pod\"}[1m]))",
+          "legendFormat": "{{result}}"
+        }
+      ],
+      "description": "accepted menjadi HazardEvent; rejected disisihkan ke rejected_messages."
+    },
+    {
+      "id": 42,
+      "type": "timeseries",
+      "title": "Ditolak per alasan (5m)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 106,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (reason) (increase(pantai_rejected_total{service=\"aggregator\",pod=~\"$pod\"}[5m]))",
+          "legendFormat": "{{reason}}"
+        }
+      ],
+      "description": "contract_violation, out_of_range, quality_not_ok, unknown_station."
+    },
+    {
+      "id": 43,
+      "type": "timeseries",
+      "title": "Latensi alert kritis: diterima sampai konfirmasi broker",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 114,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(critical_alert_publish_seconds_bucket{service=\"aggregator\",pod=~\"$pod\"}[5m])))",
+          "legendFormat": "p50"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(critical_alert_publish_seconds_bucket{service=\"aggregator\",pod=~\"$pod\"}[5m])))",
+          "legendFormat": "p95"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(critical_alert_publish_seconds_bucket{service=\"aggregator\",pod=~\"$pod\"}[5m])))",
+          "legendFormat": "p99"
+        }
+      ],
+      "description": "Bagian latensi yang dikendalikan aggregator (outbox sampai konfirmasi RabbitMQ). Target total p95 <= 5 detik."
+    },
+    {
+      "id": 44,
+      "type": "timeseries",
+      "title": "Alert kritis: diterbitkan vs gagal",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 114,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "stacking": {
+              "mode": "none"
+            }
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(critical_alerts_published_total{service=\"aggregator\",pod=~\"$pod\"}[1m]))",
+          "legendFormat": "diterbitkan"
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(critical_alert_publish_failures_total{service=\"aggregator\",pod=~\"$pod\"}[1m]))",
+          "legendFormat": "gagal terbit"
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(pantai_critical_total{service=\"aggregator\",pod=~\"$pod\"}[1m]))",
+          "legendFormat": "kritis diterima dari sensor"
+        }
+      ],
+      "description": "Jumlah kritis diterima dari sensor harus sama dengan jumlah diterbitkan dari waktu ke waktu."
     }
   ]
 }

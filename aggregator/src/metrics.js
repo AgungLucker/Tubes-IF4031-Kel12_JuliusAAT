@@ -73,6 +73,13 @@ new client.Gauge({
 });
 
 new client.Gauge({
+    name: "aggregator_ready",
+    help: "1 if /health/ready answers 200 on this instance, else 0",
+    registers: [register],
+    collect() { this.set(require("./lifecycle").readiness().ready ? 1 : 0); },
+});
+
+new client.Gauge({
     name: "aggregator_shards_total",
     help: "Number of configured HazardEvent shards",
     registers: [register],

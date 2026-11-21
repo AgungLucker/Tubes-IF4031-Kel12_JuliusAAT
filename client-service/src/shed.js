@@ -1,7 +1,7 @@
 import { HttpError } from './error.js';
 import { log } from './logger.js';
 
-export function createShedder({ maxInflight, mediaShare }) {
+export function createShedder({ maxInflight, mediaShare, onShed = () => {} }) {
   const lowLimit = Math.max(1, Math.floor(maxInflight * mediaShare));
   let inflight = 0;
   const shed = { high: 0, low: 0 };
@@ -12,6 +12,7 @@ export function createShedder({ maxInflight, mediaShare }) {
     const limit = prio === 'high' ? maxInflight : lowLimit;
     if (inflight >= limit) {
       shed[prio] += 1;
+      onShed(prio);
       log.info({ event: 'shed', priority: prio, inflight, client_id: req.auth?.clientId });
       res.set('Retry-After', '1');
       return next(new HttpError(429, 'rate_limited', 'Server is overloaded, retry shortly'));

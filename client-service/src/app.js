@@ -8,7 +8,7 @@ import { log } from './logger.js';
 // import rateLimit from 'express-rate-limit';
 import { verifyJwt, checkSession } from './auth.js';
 import { publishFieldReports } from './publisher.js';
-import { httpMetrics, metricsHandler, fieldReportsTotal, fieldReportPublishDuration } from './metric.js';
+import { httpMetrics, metricsHandler, fieldReportsTotal, fieldReportPublishDuration, shedTotal } from './metric.js';
 import { createShedder, prioritize } from './shed.js';
 
 const HAZARD_TYPES = new Set(['SEISMIC', 'TSUNAMI', 'VOLCANIC', 'WILDFIRE', 'COASTAL']);
@@ -17,7 +17,9 @@ const SOURCES = new Set(['BMKG', 'PVMBG', 'SATELIT', 'SENSOR_PANTAI']);
 
 export function createApp({ cfg, keys }) {
     const app = express();
-    const shedder = createShedder({ maxInflight: cfg.maxInflight, mediaShare: cfg.mediaShare });
+    const shedder = createShedder({
+      maxInflight: cfg.maxInflight, mediaShare: cfg.mediaShare, onShed: (priority) => shedTotal.inc({ priority }),
+    });
     app.disable('x-powered-by');
     app.use(express.json());
     app.use(httpMetrics);
