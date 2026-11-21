@@ -2,6 +2,9 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { AuthError } from './tokenService.js';
 import { log } from './logger.js'
+import { httpMetrics, metricsHandler, authOperations, loginsByClient } from './metrics.js';
+
+const OP_BY_ROUTE = { '/auth/token': 'login', '/auth/refresh': 'refresh', '/auth/introspect': 'introspect' };
 
 const isStr = (v) => typeof v === 'string' && v.length > 0;
 export function createApp({ cfg, keys, tokens }) {
@@ -9,7 +12,8 @@ export function createApp({ cfg, keys, tokens }) {
     app.disable('x-powered-by');
     app.use(express.json());
     const wrap = (fn) => (req, res, next) => fn(req, res, next).catch(next);
-    app.use
+    app.use(httpMetrics);
+    app.get('/metrics', metricsHandler);
 
     app.use((req, res, next) => {
         req.cid = req.get('X-Correlation-ID') || randomUUID();
@@ -30,6 +34,8 @@ export function createApp({ cfg, keys, tokens }) {
         const { client_id, client_secret } = req.body || {};
 
         const result = await tokens.login(client_id, client_secret);
+        authOperations.inc({ op: 'login', result: 'success' });
+        loginsByClient.inc({ client: client_id });
         log.info({ event: 'login', correlation_id: req.cid, client_id });
         res.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' }).json(result);
     }));
@@ -40,6 +46,7 @@ export function createApp({ cfg, keys, tokens }) {
             throw new AuthError(400, 'invalid_request', 'refresh_token is required');
 
         const result = await tokens.refresh(refresh_token);
+        authOperations.inc({ op: 'refresh', result: 'success' });
         log.info({ event: 'refresh', correlation_id: req.cid });
         res.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' }).json(result);
     }));
@@ -50,12 +57,18 @@ export function createApp({ cfg, keys, tokens }) {
 
         const { sid, jti } = req.body || {};
         if (!isStr(sid) || !isStr(jti)) throw new AuthError(400, 'invalid_request', 'sid and jti are required');
-        res.json(await tokens.introspect({ sid, jti }));
+        const result = await tokens.introspect({ sid, jti });
+        authOperations.inc({ op: 'introspect', result: result.active ? 'active' : 'inactive' });
+        res.json(result);
     }));
 
     app.use((err, req, res, next) => {
-        if (err instanceof AuthError)
+        const op = OP_BY_ROUTE[req.route?.path];
+        if (err instanceof AuthError) {
+            if (op) authOperations.inc({ op, result: err.code });
             return res.status(err.status).json({ error: err.code, error_description: err.message });
+        }
+        if (op) authOperations.inc({ op, result: err.type === 'entity.parse.failed' ? 'invalid_request' : 'server_error' });
         if (err.type === 'entity.parse.failed')
             return res.status(400).json({ error: 'invalid_request', error_description: 'Malformed JSON' });
         log.error({ event: 'unhandled', correlation_id: req.cid, message: err.message });

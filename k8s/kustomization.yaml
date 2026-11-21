@@ -28,34 +28,39 @@ configMapGenerator:
   - name: grafana-dashboards
     files:
       - satellite-processor.json=monitoring/files/grafana-dashboards/satellite-processor.json
+      - aggregator.json=monitoring/files/grafana-dashboards/aggregator.json
+      - client-service.json=monitoring/files/grafana-dashboards/client-service.json
+      - bnpb-token-service.json=monitoring/files/grafana-dashboards/bnpb-token-service.json
+      - consumer-dashboard.json=monitoring/files/grafana-dashboards/consumer-dashboard.json
+      - consumer-notifier.json=monitoring/files/grafana-dashboards/consumer-notifier.json
 
 # Manifests use the full GHCR name (ghcr.io/julius123123/bnpb-*:dev). `name` must match that
 # exactly or newTag is silently ignored. Bump newTag to roll a new build.
 images:
   - name: ghcr.io/julius123123/bnpb-aggregator
     newName: ghcr.io/julius123123/bnpb-aggregator
-    newTag: d78848f
+    newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
-    newTag: cf3dbe3
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-pvmbg
     newName: ghcr.io/julius123123/bnpb-pvmbg
-    newTag: cf3dbe3
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
-    newTag: cf3dbe3
+    newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-token
     newName: ghcr.io/julius123123/bnpb-token
-    newTag: cf3dbe3
+    newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-dashboard
     newName: ghcr.io/julius123123/bnpb-dashboard
-    newTag: cf3dbe3
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-notifier
     newName: ghcr.io/julius123123/bnpb-notifier
-    newTag: cf3dbe3
+    newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
-    newTag: cf3dbe3
+    newTag: 1cb6344
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -69,7 +74,6 @@ resources:
   - aggregator/deployment.yaml
   - aggregator/service.yaml
   - aggregator/pdb.yaml
-  - aggregator/service-headless.yaml
 
   - sensor-pantai/deployment.yaml
   - sensor-pantai/service.yaml
@@ -110,4 +114,5 @@ resources:
   - monitoring/grafana-secret.yaml
   - monitoring/prometheus.yaml
   - monitoring/grafana.yaml
+  - monitoring/jaeger.yaml
   - monitoring/network-policies.yaml

@@ -13,6 +13,7 @@ const { installFence } = require("../coordination/fence");
 const { FencedError } = require("../coordination/errors");
 const pollContext = require("../coordination/pollContext");
 const { replayRetrying, replayParked } = require("./replayRejected");
+const { isLeader, leaseEpoch, pollDuration, pollTotal, lastSuccessfulPollTimestamp, fencedWritesTotal } = require("../metrics");
 
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS || 3000);
 // Sensor Pantai is polled faster than the other sources and its alerts are relayed even faster:
@@ -27,19 +28,40 @@ const loops = [];
 async function leaderLoop(name, job, { onNewTerm, intervalMs = POLL_INTERVAL_MS } = {}) {
     while (!stopping) {
         const startedAt = Date.now();
+        let end = null; 
         try {
             const lease = await leases.acquireOrRenew(name);
             if (lease && !stopping) {
                 const ctx = { source: name, holder: leases.holder, epoch: lease.epoch };
+                isLeader.set({source: name}, 1);
                 if (lease.newTerm) {
+                    leaseEpoch.set({source:name},lease.epoch);
                     console.log(`[lease] ${name}: ${leases.holder} menjadi leader, epoch=${lease.epoch}`);
                     if (onNewTerm) await onNewTerm(ctx);
                 }
-                await pollContext.run(ctx, () => job(ctx));
+                end = pollDuration.startTimer({source:name});
+                const result = (await pollContext.run(ctx, () => job(ctx))) ?? "success";
+                if (result === "fenced") {
+                    fencedWritesTotal.inc({source:name});
+                    isLeader.set({source:name}, 0);
+                }
+                pollTotal.inc({source:name, result});
+                if (result === "success") lastSuccessfulPollTimestamp.set({source:name}, Date.now()/1000);
+            } else{
+                isLeader.set({source:name},0)
             }
         } catch (error) {
-            if (error instanceof FencedError) console.log(`[lease] ${name}: ${error.message}`);
-            else console.log(`[lease] ${name}: siklus gagal - ${error.message}`);
+            isLeader.set({source:name}, 0); 
+            if (error instanceof FencedError){
+                fencedWritesTotal.inc({source:name});
+                pollTotal.inc({source:name,result:"fenced"});
+                console.log(`[lease] ${name}: ${error.message}`);
+            } else {
+                pollTotal.inc({source:name,result:"error"});
+                console.log(`[lease] ${name}: siklus gagal - ${error.message}`);
+            }
+        } finally {
+            end?.();
         }
         if (!stopping) await sleep(Math.max(0, intervalMs - (Date.now() - startedAt)));
     }

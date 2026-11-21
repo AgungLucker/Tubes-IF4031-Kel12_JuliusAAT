@@ -10,11 +10,13 @@ const { groupLinkedDetections, isLinked, LINK_MAX_TIME_DIFF_MS } = require("./cl
 const { resolveFireId } = require("./fireId");
 const { summarizeFire } = require("./fireSummary");
 const { log } = require("../logger");
-const { lateRejectedTotal, commitLatencySeconds } = require("../metrics");
+const { validateFeedEvent } = require("./feedEventValidator");
+const { lateRejectedTotal, malformedEventsTotal, commitLatencySeconds } = require("../metrics");
 
 const LATENESS_LIMIT_MS = Number(process.env.LATENESS_LIMIT_MIN || 300) * 60 * 1000;
 const FLUSH_INTERVAL_MS = 1000;
 const LOW_CONFIDENCE = "l";
+const KEY_RETENTION_MARGIN_MS = 60 * 60 * 1000;
 
 const state = {
     offset: 0,
@@ -22,7 +24,7 @@ const state = {
     clockMs: null,
     detections: new Map(),
     fires: new Map(),
-    knownKeys: new Set(),
+    knownKeys: new Map(),
     pendingDetections: new Map(),
     pendingFires: new Map(),
     failure: null,
@@ -43,9 +45,11 @@ async function loadState() {
     const checkpoint = await getCheckpoint();
     const watermark = checkpoint.watermark ? toMs(checkpoint.watermark) : null;
     const since = new Date(watermark === null ? 0 : watermark - LINK_MAX_TIME_DIFF_MS);
+    const keysSince = new Date(watermark === null ? 0 : watermark - KEY_RETENTION_MARGIN_MS);
+
 
     const [keys, fires, detections] = await Promise.all([
-        getDetectionKeys(),
+        getDetectionKeys(keysSince),
         getActiveFires(),
         getOpenDetections(since),
     ]);
@@ -53,7 +57,7 @@ async function loadState() {
     state.offset = Number(checkpoint.last_offset);
     state.committedOffset = state.offset;
     state.clockMs = watermark === null ? null : watermark + LATENESS_LIMIT_MS;
-    state.knownKeys = new Set(keys);
+    state.knownKeys = new Map(keys);
     state.fires = new Map(fires.map((fire) => [fire.fire_id, fire]));
     state.detections = new Map(detections.map((detection) => {
         detection.detected_ms = toMs(detection.detected_at);
@@ -80,7 +84,7 @@ function handleDetection(payload) {
     detection.disposition = classify(detection);
 
     detection.fire_id = null;
-    state.knownKeys.add(detection.detection_key);
+    state.knownKeys.set(detection.detection_key, detection.detected_ms);
     advanceClock(detection.detected_ms);
 
     state.pendingDetections.set(detection.detection_key, detection);
@@ -144,7 +148,21 @@ async function handleFeedEvent(event) {
         throw failure;
     }
 
-    const payload = JSON.parse(event.data);
+    let payload = null;
+    let reason;
+    try {
+        payload = JSON.parse(event.data);
+        reason = validateFeedEvent(event.type, payload);
+    } catch (error) {
+        reason = `json tidak valid: ${error.message}`;
+    }
+
+    if (reason) {
+        malformedEventsTotal.inc();
+        log.error({ event: "feed_event_malformed", type: event.type, offset: payload?.offset, reason });
+        if (Number.isInteger(payload?.offset)) state.offset = payload.offset;
+        return;
+    }
 
     if (event.type === "detection") handleDetection(payload);
     else if (event.type === "update") handleUpdate(payload);
@@ -259,12 +277,18 @@ function sweep() {
         state.pendingFires.set(fireId, { ...state.fires.get(fireId), closed_at: new Date(state.clockMs) });
         state.fires.delete(fireId);
     }
+
     for (const [key, detection] of state.detections) {
         const stale = detection.fire_id
             ? closing.has(detection.fire_id)
             : detection.detected_ms + LINK_MAX_TIME_DIFF_MS < watermark;
         if (stale) state.detections.delete(key);
     }
+
+    for (const [key, ms] of state.knownKeys) {
+        if (ms < watermark - KEY_RETENTION_MARGIN_MS) state.knownKeys.delete(key);
+    }
+
 }
 
 function buildBatch() {

@@ -30,6 +30,8 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       - SATELLITE_PROCESSOR_URL=http://satellite-processor:8083
       - SATELLITE_PROCESSOR_API_KEY=${SATELLITE_PROCESSOR_API_KEY}
+      - OTEL_SERVICE_NAME=aggregator
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - AUDIT_TOKEN=${AUDIT_TOKEN}
 
   pvmbg-mock:
@@ -94,6 +96,8 @@ services:
       - SATELLITE_FEED_TOKEN=${SATELLITE_FEED_TOKEN}
       - SATELLITE_PROCESSOR_API_KEY=${SATELLITE_PROCESSOR_API_KEY}
       - LATENESS_LIMIT_MIN=${LATENESS_LIMIT_MIN}
+      - OTEL_SERVICE_NAME=satellite-processor
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
 
   store-aggregator:
@@ -225,6 +229,8 @@ services:
       - LAPANGAN_CLIENT_SECRET=${LAPANGAN_CLIENT_SECRET}
       - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
       - INTERNAL_CLIENT_SECRET=${INTERNAL_CLIENT_SECRET}
+      - OTEL_SERVICE_NAME=bnpb-token-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     volumes:
       - ./bnpb-token/keys:/app/keys:ro
 
@@ -247,6 +253,8 @@ services:
       - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
       - UPSTREAM_TIMEOUT_MS=3000
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - OTEL_SERVICE_NAME=client-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     volumes:
       - ./bnpb-token/keys/public.pem:/app/keys/public.pem:ro
 
@@ -260,7 +268,8 @@ services:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # Run as the rabbitmq user to prevent root-owned .erlang.cookie files, which can cause server startup failures (EACCES).
+      test: ["CMD", "gosu", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -278,6 +287,8 @@ services:
     environment:
       - PORT=8101
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - OTEL_SERVICE_NAME=consumer-dashboard
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
   consumer-notifier:
     build: ./consumer/notifier
@@ -294,6 +305,8 @@ services:
       - QUEUE_NAME=notifier
       - BINDINGS=hazard.*.siaga,hazard.*.awas
       - NOTIFY_DELAY_MS=0
+      - OTEL_SERVICE_NAME=consumer-notifier
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     
   prometheus:
     image: prom/prometheus:v3.13.5
@@ -320,6 +333,14 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    networks: [app_net]
+    ports:
+      - "16686:16686"
+    restart: unless-stopped
+
 
 volumes:
   aggregator-data:

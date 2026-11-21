@@ -90,25 +90,28 @@ async function upsertDetections(client, detections) {
             frp_mw = EXCLUDED.frp_mw,
             disposition = EXCLUDED.disposition,
             fire_id = EXCLUDED.fire_id,
-            feed_offset = EXCLUDED.feed_offset`,
+            feed_offset = EXCLUDED.feed_offset
+        WHERE EXCLUDED.disposition <> 'LATE_REJECTED'`,
         [JSON.stringify(detections)]
     );
 }
 
 
-async function listFires({ since } = {}) {
+async function listFires({ since, afterId = "", limit } = {}) {
     const result = await pool.query(
         `SELECT f.*,
                 COALESCE((SELECT array_agg(d.detection_key ORDER BY d.detection_key)
                             FROM detections d
                            WHERE d.fire_id = f.fire_id AND d.disposition = 'ACCEPTED'), '{}') AS detection_keys
            FROM fires f
-          WHERE f.updated_at >= $1
-          ORDER BY f.updated_at ASC`,
-        [since || new Date(0).toISOString()]
+          WHERE (date_trunc('milliseconds', f.updated_at), f.fire_id) > ($1::timestamptz, $2::text)
+          ORDER BY date_trunc('milliseconds', f.updated_at) ASC, f.fire_id ASC
+          LIMIT $3`,
+        [since || new Date(0).toISOString(), afterId, limit]
     );
     return result.rows;
 }
+
 
 async function getOpenDetections(since) {
     const result = await pool.query(
@@ -127,10 +130,14 @@ async function getActiveFires() {
     return result.rows;
 }
 
-async function getDetectionKeys() {
-    const result = await pool.query(`SELECT detection_key FROM detections`);
-    return result.rows.map((row) => row.detection_key);
+async function getDetectionKeys(since) {
+    const result = await pool.query(
+        `SELECT detection_key, detected_at FROM detections WHERE detected_at >= $1`,
+        [since]
+    );
+    return result.rows.map((row) => [row.detection_key, new Date(row.detected_at).getTime()]);
 }
+
 
 module.exports = { getCheckpoint, getLastOffset, commitBatch, listFires, getActiveFires, getOpenDetections, getDetectionKeys };
 

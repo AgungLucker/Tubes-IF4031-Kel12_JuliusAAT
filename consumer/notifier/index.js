@@ -1,5 +1,6 @@
 const amqp = require("amqplib");
 const http = require("http");
+const metrics = require("./metrics");
 
 const EXCHANGE = "hazard.events";
 const QUEUE = process.env.QUEUE_NAME || "notifier";
@@ -24,11 +25,17 @@ async function start() {
         const event = JSON.parse(msg.content.toString());
         const key = `${event.hazard_id}:${event.severity}`;
         const cid = msg.properties.headers?.correlation_id;
+        const severity = event.severity || "unknown";
+        if (msg.fields.redelivered) metrics.redeliveredTotal.inc({ queue: QUEUE });
 
         if (sent.has(key)) {
+            metrics.messagesTotal.inc({ queue: QUEUE, severity, result: "duplicate_skipped" });
             log({ event: "duplicate_skipped", correlation_id: cid, hazard_id: event.hazard_id });
         } else {
             if (DELAY_MS) await sleep(DELAY_MS);
+            metrics.messagesTotal.inc({ queue: QUEUE, severity, result: "alert_sent" });
+            const publishedAt = Number(msg.properties.headers?.published_at_ms);
+            if (publishedAt) metrics.alertLatency.observe({ severity }, Math.max(0, Date.now() - publishedAt) / 1000);
             log({
                 event: "ALERT", correlation_id: cid, severity: event.severity,
                 area: event.area_name, hazard_id: event.hazard_id, redelivered: msg.fields.redelivered,
@@ -37,12 +44,14 @@ async function start() {
         }
         ch.ack(msg);
     });
+    metrics.brokerConnected.set(1);
     log({ event: "ready", queue: QUEUE, bindings: BINDINGS });
 }
 
 http.createServer((req, res) => {
     res.setHeader("content-type", "application/json");
     if (req.url === "/health") return res.end(JSON.stringify({ status: "ok", service: QUEUE }));
+    if (req.url === "/metrics") return metrics.handleMetrics(res);
     res.statusCode = 404; res.end("{}");
 }).listen(process.env.PORT || 8102);
 

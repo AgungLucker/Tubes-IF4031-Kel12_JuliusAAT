@@ -13,7 +13,7 @@ const { state, startShardMonitor } = require("./lifecycle");
 const { startPublisher } = require("./broker/publisher");
 const { runWithRetry: startFieldReportConsumer } = require("./consumer/consume");
 const { log } = require("./logger")
-const metrics = require("./metrics");
+const { httpMetrics, metricsHandler } = require("./metrics");
 
 startPublisher();
 startFieldReportConsumer();
@@ -21,6 +21,8 @@ startFieldReportConsumer();
 const app = express();
 
 app.use(express.json());
+app.use(httpMetrics);
+app.get("/metrics", metricsHandler);
 
 app.use((req, res, next) => {
     req.cid = req.get("X-Correlation-ID") || randomUUID();
@@ -40,7 +42,6 @@ app.use((req, res, next) => {
 });
 
 app.use("/health", healthRouter)
-app.get("/metrics", (req, res) => res.type("text/plain; version=0.0.4").send(metrics.render()));
 
 const limiter = rateLimit({
     windowMs: 1000,

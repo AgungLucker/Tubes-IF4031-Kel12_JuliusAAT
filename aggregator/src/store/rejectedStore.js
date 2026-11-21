@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { pool } = require("./ingestStatus");
+const {rejectedMessagesTotal} =  require("../metrics");
 
 const MAX_ATTEMPTS = Number(process.env.DLQ_MAX_ATTEMPTS || 5);
 const RETRY_DELAY_MS = Number(process.env.DLQ_RETRY_DELAY_MS || 30000);
@@ -10,7 +11,7 @@ function makeMessageId(source, payload) {
 
 async function saveRejected({ source, sourceRefId = null, rawPayload, reason, retryable }) {
     const payload = Buffer.from(rawPayload);
-    await pool.query(
+    const { rowCount } = await pool.query(
         `INSERT INTO rejected_messages (
             message_id, source, source_ref_id, raw_payload, reason, retryable, status, next_attempt_at
         ) VALUES (
@@ -23,6 +24,8 @@ async function saveRejected({ source, sourceRefId = null, rawPayload, reason, re
             retryable ? "retrying" : "parked", RETRY_DELAY_MS,
         ]
     );
+    // ON CONFLICT DO NOTHING: pesan rusak yang sama datang lagi -> jangan dihitung dua kali.
+    if (rowCount === 1) rejectedMessagesTotal.inc({source, retryable:String(retryable)});
 }
 
 // retry query dlq

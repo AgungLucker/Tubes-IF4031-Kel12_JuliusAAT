@@ -12,7 +12,7 @@ spec:
     metadata:
       labels:
         app: prometheus
-        role: monitoring
+        role: other
     spec:
       nodeSelector:
         kubernetes.io/hostname: node-c

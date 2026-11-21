@@ -23,9 +23,12 @@ async function getIngestStatus() {
 
 async function getCursor(source) {
     const { rows } = await pool.query("SELECT last_cursor FROM ingest_status WHERE source = $1", [source]);
-    return rows[0]?.last_cursor ? new Date(rows[0].last_cursor).toISOString() : new Date(0).toISOString();
+    return rows[0]?.last_cursor || new Date(0).toISOString();
 }
 
+
+// lease = { holder, epoch } milik leader. Pembaruan kursor dan pemeriksaan lease dilakukan dalam
+// SATU pernyataan SQL, jadi instance yang sudah disalip tidak pernah bisa memajukan kursor.
 async function markPollSuccess(source, cursor, lease = null) {
     if (!lease) {
         await pool.query(

@@ -28,6 +28,11 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-credentials
                   key: RABBITMQ_URL
+            - name: OTEL_SERVICE_NAME
+              value: consumer-dashboard
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger:4318
+
           resources:
             requests:
               memory: "128Mi"
@@ -45,4 +50,20 @@ spec:
     app: consumer-dashboard
   ports:
     - port: 8101
+      targetPort: 8101
+---
+# Headless: DNS mengembalikan IP tiap pod agar Prometheus scrape setiap replika secara terpisah.
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer-dashboard-metrics
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: consumer-dashboard
+  ports:
+    - name: http
+      port: 8101
       targetPort: 8101

@@ -8,6 +8,7 @@ import { log } from './logger.js';
 // import rateLimit from 'express-rate-limit';
 import { verifyJwt, checkSession } from './auth.js';
 import { publishFieldReports } from './publisher.js';
+import { httpMetrics, metricsHandler, fieldReportsTotal, fieldReportPublishDuration } from './metric.js';
 import { createShedder, prioritize } from './shed.js';
 
 const HAZARD_TYPES = new Set(['SEISMIC', 'TSUNAMI', 'VOLCANIC', 'WILDFIRE', 'COASTAL']);
@@ -19,6 +20,8 @@ export function createApp({ cfg, keys }) {
     const shedder = createShedder({ maxInflight: cfg.maxInflight, mediaShare: cfg.mediaShare });
     app.disable('x-powered-by');
     app.use(express.json());
+    app.use(httpMetrics);
+    app.get('/metrics', metricsHandler);
     app.use((req, res, next) => {
         req.cid = req.get('X-Correlation-ID') || randomUUID();
         res.set('X-Correlation-ID', req.cid);
@@ -106,8 +109,11 @@ export function createApp({ cfg, keys }) {
     app.post('/field-reports', verifyJwt(cfg), checkSession(cfg), async (req, res) => {
         if (req.auth.clientId === "lapangan-client") {
             const reportId = req.get('Idempotency-Key') ?? req.body?.report_id ?? randomUUID();
+            const end = fieldReportPublishDuration.startTimer();
             try {
                 await publishFieldReports(req.body, String(reportId));
+                end({ result: 'accepted' });
+                fieldReportsTotal.inc({ result: 'accepted' });
 
                 return res.status(202).json({
                     message: "Report accepted",
@@ -115,11 +121,14 @@ export function createApp({ cfg, keys }) {
                 });
 
             } catch (err) {
+                end({ result: 'broker_unavailable' });
+                fieldReportsTotal.inc({ result: 'broker_unavailable' });
                 return res.status(503).json({
                     message: "Failed to publish report"
                 });
             }
         }
+        fieldReportsTotal.inc({ result: 'forbidden' });
         return res.status(403).json({
             message: "Only lapangan-client allowed to post field report"
         });

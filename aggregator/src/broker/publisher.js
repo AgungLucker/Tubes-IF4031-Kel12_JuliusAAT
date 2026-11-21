@@ -50,7 +50,8 @@ async function publishHazardEvent(event) {
             messageId: randomUUID(),
             contentType: 'application/json',
             headers: {
-                correlation_id: randomUUID()
+                correlation_id: randomUUID(),
+                published_at_ms: Date.now()
             }
         },
         (err) => {
