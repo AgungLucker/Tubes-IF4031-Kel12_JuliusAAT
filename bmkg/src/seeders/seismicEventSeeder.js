@@ -100,7 +100,7 @@ async function seedSeismicEvent() {
             potential_tsunami
         )
         SELECT
-            'SE' || LPAD(nextval('seismic_events_seq')::TEXT, 3, '0'),
+            'SE' || nextval('seismic_events_seq')::TEXT,
             magnitude,
             depth,
             epicenter_lat,
@@ -150,7 +150,7 @@ async function seedSeismicEvent() {
                 estimated_arrival
             )
             VALUES (
-                'TW' || LPAD(nextval('tsunami_warnings_seq')::TEXT, 3, '0'),
+                'TW' || nextval('tsunami_warnings_seq')::TEXT,
                 $1,
                 $2,
                 $3,

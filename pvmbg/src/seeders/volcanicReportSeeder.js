@@ -15,7 +15,7 @@ async function seedVolcanicReport() {
             confidence_level
         )
         SELECT
-            'VR' || LPAD(nextval('report_id_seq')::TEXT, 3, '0'),
+            'VR' || nextval('report_id_seq')::TEXT,
             'V' || LPAD((FLOOR(RANDOM() * 8) + 1)::TEXT, 3, '0'),
             alert_level,
             FLOOR(RANDOM() * 19 + 1)::INT,
