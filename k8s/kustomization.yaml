@@ -105,4 +105,5 @@ resources:
   - monitoring/grafana-secret.yaml
   - monitoring/prometheus.yaml
   - monitoring/grafana.yaml
+  - monitoring/jaeger.yaml
   - monitoring/network-policies.yaml

@@ -12,7 +12,7 @@ spec:
     metadata:
       labels:
         app: grafana
-        role: monitoring
+        role: other
     spec:
       containers:
         - name: grafana

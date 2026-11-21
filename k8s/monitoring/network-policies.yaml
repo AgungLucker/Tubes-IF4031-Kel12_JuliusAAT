@@ -1,12 +1,14 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-prometheus-to-satellite-processor
+  name: allow-prometheus-scrape
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
   podSelector:
-    matchLabels:
-      app: satellite-processor
+    matchExpressions:
+      - key: role
+        operator: NotIn
+        values: [store]
   policyTypes:
     - Ingress
   ingress:
@@ -16,7 +18,11 @@ spec:
               app: prometheus
       ports:
         - protocol: TCP
+          port: 8080
+        - protocol: TCP
           port: 8083
+        - protocol: TCP
+          port: 8090
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -37,3 +43,22 @@ spec:
       ports:
         - protocol: TCP
           port: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-namespace-to-jaeger
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  podSelector:
+    matchLabels:
+      app: jaeger
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 4318
+

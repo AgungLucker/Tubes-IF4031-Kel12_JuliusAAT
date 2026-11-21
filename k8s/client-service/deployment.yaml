@@ -33,6 +33,10 @@ spec:
               value: http://bnpb-token-service:8090
             - name: AGGREGATOR_URL
               value: http://aggregator:8090
+            - name: OTEL_SERVICE_NAME
+              value: client-service
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://jaeger:4318
             - name: INTERNAL_CLIENT_ID
               valueFrom:
                 secretKeyRef:
