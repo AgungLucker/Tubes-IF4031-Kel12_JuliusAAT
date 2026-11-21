@@ -285,6 +285,8 @@ services:
     environment:
       - PORT=8101
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - OTEL_SERVICE_NAME=consumer-dashboard
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
   consumer-notifier:
     build: ./consumer/notifier
@@ -301,6 +303,8 @@ services:
       - QUEUE_NAME=notifier
       - BINDINGS=hazard.*.siaga,hazard.*.awas
       - NOTIFY_DELAY_MS=0
+      - OTEL_SERVICE_NAME=consumer-notifier
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     
   prometheus:
     image: prom/prometheus:v3.13.5
