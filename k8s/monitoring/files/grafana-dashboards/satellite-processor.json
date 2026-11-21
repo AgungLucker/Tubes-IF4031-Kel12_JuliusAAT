@@ -191,6 +191,28 @@
                     "legendFormat": "p95"
                 }
             ]
+        },
+        {
+            "id": 8,
+            "type": "stat",
+            "title": "Event feed rusak (dilewati)",
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "gridPos": {
+                "x": 0,
+                "y": 24,
+                "w": 8,
+                "h": 8
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "expr": "satellite_malformed_events_total",
+                    "legendFormat": "dilewati"
+                }
+            ]
         }
     ]
 }
