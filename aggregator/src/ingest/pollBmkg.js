@@ -5,6 +5,7 @@ const { saveRejected } = require("../store/rejectedStore");
 const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { publishHazardEvent } = require("../broker/publisher");
 const { BadPayloadError } = require("../sources/httpClient");
+const { FencedError } = require("../coordination/errors");
 
 
 function mapTsunamiWarningByEventId(tsunamiWarnings) {
@@ -15,7 +16,9 @@ function mapTsunamiWarningByEventId(tsunamiWarnings) {
     return map;
 }
 
-async function pollBmkg(since) {
+// ctx = { source, holder, epoch } dari leader election. ctx berfungsi sebagai fence (source+epoch)
+// untuk tulis ke shard dan sebagai lease (holder+epoch) untuk memajukan kursor.
+async function pollBmkg(since, ctx = null) {
     try {
         const [events, tsunamiWarnings] = await Promise.all([
             getSeismicEvents(since),
@@ -28,7 +31,7 @@ async function pollBmkg(since) {
         for (const event of events) {
             const relatedWarning = tsunamiWarningByEvent[event.event_id];
             const hazardEvent = mapSeismicEventToHazardEvent(event, relatedWarning);
-            const { inserted } = await upsertHazardEvent(hazardEvent);
+            const { inserted } = await upsertHazardEvent(hazardEvent, ctx);
 
             if (inserted) {
                 publishHazardEvent(hazardEvent);
@@ -38,9 +41,13 @@ async function pollBmkg(since) {
                 latestCursor = event.occurred_at
             }
         }
-        await markPollSuccess("BMKG", latestCursor);
+        await markPollSuccess("BMKG", latestCursor, ctx);
         console.log(`[poll] BMKG: ${events.length} event(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
+        if (error instanceof FencedError) {
+            console.log(`[poll] BMKG: dihentikan, leader sudah digantikan - ${error.message}`);
+            return;
+        }
         if (error instanceof BadPayloadError) {
             await saveRejected({
                 source: "BMKG",
@@ -50,7 +57,7 @@ async function pollBmkg(since) {
             }).catch((saveError) => console.log(`[poll] BMKG: gagal menyimpan pesan rusak - ${saveError.message}`));
         }
 
-        await markPollError("BMKG", error.message).catch(() => { });
+        await markPollError("BMKG", error.message, ctx).catch(() => { });
         console.log(`[poll] BMKG: GAGAL - ${error.message}`);
     }
 }

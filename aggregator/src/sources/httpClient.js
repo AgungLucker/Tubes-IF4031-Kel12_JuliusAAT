@@ -1,3 +1,5 @@
+const { upstreamHeaders } = require("../coordination/pollContext");
+
 const MAX_BODY_BYTES = Number(process.env.MAX_BODY_BYTES || 1048576);
 const MAX_JSON_DEPTH = Number(process.env.MAX_JSON_DEPTH || 64);
 
@@ -68,7 +70,10 @@ async function fetchJson(url, { headers = {}, timeoutMs = 2000 } = {}) {
     let status = "ERROR";
 
     try {
-        const response = await fetch(url, { headers, signal: controller.signal });
+        const response = await fetch(url, {
+            headers: { ...headers, ...upstreamHeaders() },
+            signal: controller.signal,
+        });
         status = response.status;
 
         if (!response.ok) {

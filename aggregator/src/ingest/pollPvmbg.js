@@ -6,31 +6,35 @@ const { markPollSuccess, markPollError } = require("../store/ingestStatus");
 const { saveRejected } = require("../store/rejectedStore");
 const { publishHazardEvent } = require("../broker/publisher");
 const { BadPayloadError } = require("../sources/httpClient");
+const { FencedError } = require("../coordination/errors");
 
-async function processVolcanicReport(volcanicReport) {
+// ctx = { source, holder, epoch } milik leader polling (null untuk replay, yang tidak memakai fence).
+async function processVolcanicReport(volcanicReport, ctx = null) {
     const reason = validateVolcanicReport(volcanicReport);
     if (reason) return { ok: false, reason, retryable: false };
 
     try {
         const hazardEvent = mapVolcanicReportToHazardEvent(volcanicReport);
-        const { inserted } = await upsertHazardEvent(hazardEvent);
+        const { inserted } = await upsertHazardEvent(hazardEvent, ctx);
 
         if (inserted) {
             publishHazardEvent(hazardEvent);
         }
         return { ok: true };
     } catch (error) {
+        // Leader yang sudah disalip bukan "pesan gagal": hentikan siklus, jangan masuk rejected.
+        if (error instanceof FencedError) throw error;
         return { ok: false, reason: `system_error: ${error.message}`, retryable: true };
     }
 }
 
-async function pollPvmbg(since) {
+async function pollPvmbg(since, ctx = null) {
     try {
         const volcanicReports = await getVolcanicReports(since);
 
         let latestCursor = since;
         for (const volcanicReport of volcanicReports) {
-            const result = await processVolcanicReport(volcanicReport);
+            const result = await processVolcanicReport(volcanicReport, ctx);
 
             if (!result.ok) {
                 await saveRejected({
@@ -47,9 +51,13 @@ async function pollPvmbg(since) {
             }
         }
 
-        await markPollSuccess("PVMBG", latestCursor);
+        await markPollSuccess("PVMBG", latestCursor, ctx);
         console.log(`[poll] PVMBG: ${volcanicReports.length} report(s) diproses, cursor=${latestCursor}`);
     } catch (error) {
+        if (error instanceof FencedError) {
+            console.log(`[poll] PVMBG: dihentikan, leader sudah digantikan - ${error.message}`);
+            return;
+        }
         if (error instanceof BadPayloadError) {
             await saveRejected({
                 source: "PVMBG",
@@ -59,7 +67,7 @@ async function pollPvmbg(since) {
             }).catch((saveError) => console.log(`[poll] PVMBG: gagal menyimpan pesan rusak - ${saveError.message}`));
         }
 
-        await markPollError("PVMBG", error.message).catch(() => { });
+        await markPollError("PVMBG", error.message, ctx).catch(() => { });
         console.log(`[poll] PVMBG: GAGAL - ${error.message}`);
     }
 }

@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { makeHazardId, bucketOf, shardFor, bucketRanges } = require("../db/router");
 const { scatter } = require("../db/scatter");
 const { encodeCursor, decodeCursor } = require("./cursor");
+const { withFence } = require("../coordination/fence");
 
 const WRITE_TIMEOUT_MS = Number(process.env.SHARD_WRITE_TIMEOUT_MS || 3000);
 const AUDIT_TIMEOUT_MS = Number(process.env.SHARD_AUDIT_TIMEOUT_MS || 20000);
@@ -25,7 +26,11 @@ const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 // Upsert idempoten: data yang sama diproses berulang -> tetap satu baris, dan bila
 // isinya tidak berubah, baris tidak disentuh sama sekali (tidak ada WAL/updated_at baru).
 // Mengembalikan { hazard_id, shard, inserted, changed }.
-async function upsertHazardEvent(event) {
+//
+// fence = { source, epoch } (token milik leader polling): bila diberikan, tulis hanya
+// berhasil jika epoch itu belum disalip leader yang lebih baru di shard tsb; selain itu
+// dilempar FencedError dan tidak ada yang tersimpan. Tanpa fence (mis. field report) tulis biasa.
+async function upsertHazardEvent(event, fence = null) {
     const {
         source, source_ref_id, hazard_type, severity, area_name,
         latitude, longitude, occurred_at, attributes,
@@ -36,7 +41,7 @@ async function upsertHazardEvent(event) {
     const bucket = bucketOf(hazard_id);
     const shard = shardFor(hazard_id);
 
-    const result = await shard.pool.query({
+    const result = await withFence(shard.pool, fence, (db) => db.query({
         text: `INSERT INTO hazard_events (
                 hazard_id, bucket, source, source_ref_id, hazard_type,
                 severity, area_name, latitude, longitude, occurred_at, attributes
@@ -61,21 +66,21 @@ async function upsertHazardEvent(event) {
         values: [hazard_id, bucket, source, refId, hazard_type, severity,
             area_name, latitude, longitude, occurred_at, JSON.stringify(attributes ?? {})],
         query_timeout: WRITE_TIMEOUT_MS,
-    });
+    }));
 
     const row = result.rows[0];
     return { hazard_id, shard: shard.name, inserted: row?.inserted === true, changed: Boolean(row) };
 }
 
 // Menghapus satu HazardEvent (dipakai mis. kebakaran yang ditarik). true bila ada yang terhapus.
-async function deleteHazardEvent(source, sourceRefId) {
+async function deleteHazardEvent(source, sourceRefId, fence = null) {
     const hazard_id = makeHazardId(source, String(sourceRefId));
     const shard = shardFor(hazard_id);
-    const res = await shard.pool.query({
+    const res = await withFence(shard.pool, fence, (db) => db.query({
         text: "DELETE FROM hazard_events WHERE hazard_id = $1",
         values: [hazard_id],
         query_timeout: WRITE_TIMEOUT_MS,
-    });
+    }));
     return res.rowCount > 0;
 }
 

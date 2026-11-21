@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS ingest_fence (
+    source TEXT PRIMARY KEY,
+    epoch  BIGINT NOT NULL DEFAULT 0
+);
+
+INSERT INTO ingest_fence (source) VALUES ('BMKG'), ('PVMBG'), ('SATELIT'), ('SENSOR_PANTAI')
+ON CONFLICT (source) DO NOTHING;
