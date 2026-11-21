@@ -18,25 +18,34 @@ async function syncFire(fire, ctx) {
 }
 
 // ctx = { source, holder, epoch } dari leader election (fence untuk shard, lease untuk kursor).
-async function pollSatellite(since, ctx = null) {
+async function pollSatellite(cursor, ctx = null) {
     try {
-        const fires = await getFires(since);
+        let [since, afterId = ""] = cursor.split("|");
+        let processed = 0;
 
-        let latestCursor = since;
-        for (const fire of fires) {
-            if (fire.status === "ACTIVE") {
-                await syncFire(fire, ctx);
-            } else {
-                await deleteHazardEvent("SATELIT", fire.fire_id, ctx);
+        while (true) {
+            const fires = await getFires(since, afterId);
+
+            for (const fire of fires) {
+                if (fire.status === "ACTIVE") {
+                    await syncFire(fire, ctx);
+                } else {
+                    await deleteHazardEvent("SATELIT", fire.fire_id, ctx);
+                }
             }
 
-            if (fire.updated_at > latestCursor) {
-                latestCursor = fire.updated_at
+            if (fires.length > 0) {
+                const last = fires[fires.length - 1];
+                since = last.updated_at;
+                afterId = last.fire_id;
+                processed += fires.length;
             }
+
+            await markPollSuccess("SATELIT", `${since}|${afterId}`, ctx);
+            if (fires.length === 0) break;
         }
 
-        await markPollSuccess("SATELIT", latestCursor, ctx);
-        console.log(`[poll] SATELIT: ${fires.length} fire(s) diproses, cursor=${latestCursor}`);
+        console.log(`[poll] SATELIT: ${processed} fire(s) diproses, cursor=${since}|${afterId}`);
 
         return "success";
     } catch (error) {
