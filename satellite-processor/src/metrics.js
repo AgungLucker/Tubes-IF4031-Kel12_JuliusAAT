@@ -23,6 +23,13 @@ const lateRejectedTotal = new client.Counter({
     registers: [register],
 });
 
+const malformedEventsTotal = new client.Counter({
+    name: "satellite_malformed_events_total",
+    help: "Feed events dropped because they failed validation",
+    registers: [register],
+});
+
+
 const commitLatencySeconds = new client.Histogram({
     name: "satellite_commit_latency_seconds",
     help: "Time from event received to batch commit",
@@ -72,5 +79,6 @@ module.exports = {
     metricsHandler,
     registerGauges,
     lateRejectedTotal,
+    malformedEventsTotal,
     commitLatencySeconds,
 };

@@ -10,7 +10,8 @@ const { groupLinkedDetections, isLinked, LINK_MAX_TIME_DIFF_MS } = require("./cl
 const { resolveFireId } = require("./fireId");
 const { summarizeFire } = require("./fireSummary");
 const { log } = require("../logger");
-const { lateRejectedTotal, commitLatencySeconds } = require("../metrics");
+const { validateFeedEvent } = require("./feedEventValidator");
+const { lateRejectedTotal, malformedEventsTotal, commitLatencySeconds } = require("../metrics");
 
 const LATENESS_LIMIT_MS = Number(process.env.LATENESS_LIMIT_MIN || 300) * 60 * 1000;
 const FLUSH_INTERVAL_MS = 1000;
@@ -144,7 +145,21 @@ async function handleFeedEvent(event) {
         throw failure;
     }
 
-    const payload = JSON.parse(event.data);
+    let payload = null;
+    let reason;
+    try {
+        payload = JSON.parse(event.data);
+        reason = validateFeedEvent(event.type, payload);
+    } catch (error) {
+        reason = `json tidak valid: ${error.message}`;
+    }
+
+    if (reason) {
+        malformedEventsTotal.inc();
+        log.error({ event: "feed_event_malformed", type: event.type, offset: payload?.offset, reason });
+        if (Number.isInteger(payload?.offset)) state.offset = payload.offset;
+        return;
+    }
 
     if (event.type === "detection") handleDetection(payload);
     else if (event.type === "update") handleUpdate(payload);
