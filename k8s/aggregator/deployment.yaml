@@ -1,10 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata: 
+metadata:
   name: aggregator
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
   replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 5
   selector:
     matchLabels:
       app: aggregator
@@ -15,6 +21,16 @@ spec:
         role: aggregator
     spec:
       serviceAccountName: aggregator
+      terminationGracePeriodSeconds: 45
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: aggregator
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
@@ -29,12 +45,46 @@ spec:
 
           ports:
             - containerPort: 8090
-          
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8090
+            periodSeconds: 3
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8090
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 6
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "8"]
+
           envFrom:
             - configMapRef:
                 name: bnpb-config
 
           env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: LEASE_TTL_SECONDS
+              value: "15"
+            - name: SHUTDOWN_DRAIN_MS
+              value: "3000"
             - name: BMKG_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -87,7 +137,7 @@ spec:
                 secretKeyRef:
                   name: rabbitmq-credentials
                   key: RABBITMQ_URL
-          
+
           resources:
             requests:
               memory: "256Mi"

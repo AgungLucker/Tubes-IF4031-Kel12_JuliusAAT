@@ -68,6 +68,7 @@ resources:
 
   - aggregator/deployment.yaml
   - aggregator/service.yaml
+  - aggregator/pdb.yaml
 
   - bmkg/deployment.yaml
   - bmkg/service.yaml

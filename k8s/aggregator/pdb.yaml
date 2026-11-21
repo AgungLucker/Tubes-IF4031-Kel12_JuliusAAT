@@ -1,0 +1,12 @@
+# Voluntary disruptions (node drain, upgrade) may take at most one aggregator at a time, so
+# the entry point keeps serving. Scaling the Deployment and rolling updates are not affected.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: aggregator
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: aggregator
