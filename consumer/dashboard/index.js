@@ -1,5 +1,6 @@
 const amqp = require("amqplib");
 const http = require("http");
+const metrics = require("./metrics");
 
 const EXCHANGE = "hazard.events";
 const QUEUE = "dashboard-updater";
@@ -10,6 +11,7 @@ const log = (o) => console.log(JSON.stringify({ ts: new Date().toISOString(), se
 async function startConsumer() {
     const conn = await amqp.connect(process.env.RABBITMQ_URL);
     conn.on("close", () => {
+        metrics.brokerConnected.set(0);
         log({ event: "connection_closed", message: "Connection closed" });
         setTimeout(startConsumer, 5000);
     })
@@ -26,18 +28,26 @@ async function startConsumer() {
 
         state.set(event.hazard_id, event);
 
+        metrics.messagesTotal.inc({ queue: QUEUE, hazard_type: event.hazard_type || "unknown", result: "consumed" });
+        if (msg.fields.redelivered) metrics.redeliveredTotal.inc({ queue: QUEUE });
+        const publishedAt = Number(msg.properties.headers?.published_at_ms);
+        if (publishedAt) metrics.deliveryLatency.observe({ queue: QUEUE }, Math.max(0, Date.now() - publishedAt) / 1000);
+        metrics.stateSize.set(state.size);
+
         log({event: "consumed", correlation_id: msg.properties.headers?.correlation_id,
             hazard_id: event.hazard_id, severity: event.severity, redelivered: msg.fields.redelivered});
 
         ch.ack(msg);
     })
 
+    metrics.brokerConnected.set(1);
     log({event: 'ready'})
 }
 
 http.createServer((req, res) => {
     res.setHeader("content-type", "application/json");
     if (req.url === "/health") return res.end(JSON.stringify({ status: "ok", service: QUEUE }));
+    if (req.url === "/metrics") return metrics.handleMetrics(res);
     if (req.url === "/state") return res.end(JSON.stringify({ count: state.size, events: [...state.values()] }));
     res.statusCode = 404; res.end("{}");
 }).listen(process.env.PORT || 8101);

@@ -46,3 +46,19 @@ spec:
   ports:
     - port: 8101
       targetPort: 8101
+---
+# Headless: DNS mengembalikan IP tiap pod agar Prometheus scrape setiap replika secara terpisah.
+apiVersion: v1
+kind: Service
+metadata:
+  name: consumer-dashboard-metrics
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: consumer-dashboard
+  ports:
+    - name: http
+      port: 8101
+      targetPort: 8101

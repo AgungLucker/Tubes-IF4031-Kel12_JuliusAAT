@@ -23,6 +23,10 @@ spec:
           port: 8083
         - protocol: TCP
           port: 8090
+        - protocol: TCP
+          port: 8101
+        - protocol: TCP
+          port: 8102
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
