@@ -30,6 +30,8 @@ services:
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
       - SATELLITE_PROCESSOR_URL=http://satellite-processor:8083
       - SATELLITE_PROCESSOR_API_KEY=${SATELLITE_PROCESSOR_API_KEY}
+      - OTEL_SERVICE_NAME=aggregator
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
       - AUDIT_TOKEN=${AUDIT_TOKEN}
 
   pvmbg-mock:
