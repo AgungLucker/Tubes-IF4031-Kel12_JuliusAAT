@@ -1,10 +1,6 @@
 // Polling with leader election, so that every data source is fetched by exactly one instance
 // at a time (see src/coordination/). Each source has its own lease, so with three instances
 // the sources spread over them, and a dead leader is replaced within about one lease TTL.
-//
-// Each loop iteration: acquire-or-renew the lease -> if leader, read the cursor (AFTER taking
-// the lease, so a handover resumes exactly where the previous leader's last committed poll
-// ended: no gap) -> poll, with the epoch as fencing token on every write.
 const { pollBmkg } = require("./pollBmkg");
 const { pollPvmbg } = require("./pollPvmbg");
 const { pollSatellite } = require("./pollSatellite");
@@ -23,7 +19,7 @@ const loops = [];
 
 async function leaderLoop(name, job, { onNewTerm } = {}) {
     while (!stopping) {
-        const startedAt = Date.now(); // local clock only paces the loop; it never decides leadership
+        const startedAt = Date.now();
         try {
             const lease = await leases.acquireOrRenew(name);
             if (lease && !stopping) {

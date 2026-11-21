@@ -8,7 +8,8 @@ const rejectedMessagesRouter = require("./routes/rejectedMessages");
 const auditRouter = require("./routes/audit");
 const analyticsRouter = require("./routes/analytics");
 const { startMigrationLoop } = require("./db/migrate");
-const { startPoller } = require("./ingest/poller");
+const { startPoller, stopPoller } = require("./ingest/poller");
+const { state, startShardMonitor } = require("./lifecycle");
 const { startPublisher } = require("./broker/publisher");
 const { runWithRetry: startFieldReportConsumer } = require("./consumer/consume");
 const { log } = require("./logger")
@@ -57,8 +58,41 @@ process.on("unhandledRejection", (err) => {
     log.error({ event: "unhandled_rejection", error: err?.message || String(err) });
 });
 
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
     console.log(`Aggregator service running on port ${PORT}`);
+    startShardMonitor();
     await startMigrationLoop();
+    state.started = true;
     if (process.env.DISABLE_POLLER !== "true") startPoller();
 });
+
+server.keepAliveTimeout = 65_000;
+server.headersTimeout = 66_000;
+
+// Graceful shutdown
+//   1. stop being "ready" 
+//   2. give the leases back 
+//   3. keep serving for a moment 
+const DRAIN_MS = Number(process.env.SHUTDOWN_DRAIN_MS || 3000);
+const FORCE_EXIT_MS = Number(process.env.SHUTDOWN_FORCE_MS || 25000);
+let shuttingDown = false;
+
+async function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    state.draining = true;
+    log.info({ event: "shutdown_begin", signal });
+    setTimeout(() => process.exit(1), FORCE_EXIT_MS).unref();
+
+    await stopPoller().catch(() => { });
+    await new Promise((r) => setTimeout(r, DRAIN_MS));
+    server.close(() => {
+        log.info({ event: "shutdown_done" });
+        process.exit(0);
+    });
+    server.closeIdleConnections?.();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("message", (msg) => { if (msg === "shutdown") shutdown("IPC"); });
