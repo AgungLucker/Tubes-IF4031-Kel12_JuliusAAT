@@ -39,7 +39,7 @@ configMapGenerator:
 images:
   - name: ghcr.io/julius123123/bnpb-aggregator
     newName: ghcr.io/julius123123/bnpb-aggregator
-    newTag: d78848f
+    newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-bmkg
     newName: ghcr.io/julius123123/bnpb-bmkg
     newTag: 68d8fca
@@ -60,7 +60,7 @@ images:
     newTag: cf3dbe3
   - name: ghcr.io/julius123123/bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
-    newTag: 43c5204
+    newTag: 1cb6344
 
 generatorOptions:
   disableNameSuffixHash: true
