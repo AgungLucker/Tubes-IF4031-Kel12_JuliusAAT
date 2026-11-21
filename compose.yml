@@ -247,6 +247,8 @@ services:
       - INTERNAL_CLIENT_ID=${INTERNAL_CLIENT_ID}
       - UPSTREAM_TIMEOUT_MS=3000
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      - OTEL_SERVICE_NAME=client-service
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
     volumes:
       - ./bnpb-token/keys/public.pem:/app/keys/public.pem:ro
 
@@ -320,6 +322,14 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    networks: [app_net]
+    ports:
+      - "16686:16686"
+    restart: unless-stopped
+
 
 volumes:
   aggregator-data:
