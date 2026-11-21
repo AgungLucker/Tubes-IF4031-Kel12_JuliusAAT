@@ -28,6 +28,11 @@ configMapGenerator:
   - name: grafana-dashboards
     files:
       - satellite-processor.json=monitoring/files/grafana-dashboards/satellite-processor.json
+      - aggregator.json=monitoring/files/grafana-dashboards/aggregator.json
+      - client-service.json=monitoring/files/grafana-dashboards/client-service.json
+      - bnpb-token-service.json=monitoring/files/grafana-dashboards/bnpb-token-service.json
+      - consumer-dashboard.json=monitoring/files/grafana-dashboards/consumer-dashboard.json
+      - consumer-notifier.json=monitoring/files/grafana-dashboards/consumer-notifier.json
 
 # Manifests use the full GHCR name (ghcr.io/julius123123/bnpb-*:dev). `name` must match that
 # exactly or newTag is silently ignored. Bump newTag to roll a new build.
