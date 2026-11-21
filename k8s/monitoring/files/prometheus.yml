@@ -12,3 +12,10 @@ scrape_configs:
         type: A
         port: 8090
         refresh_interval: 10s
+  - job_name: client-service
+    scrape_interval: 5s
+    dns_sd_configs:
+      - names: ["client-service-metrics.sistem-informasi-kebencanaan-bnpb.svc.cluster.local"]
+        type: A
+        port: 8080
+        refresh_interval: 10s

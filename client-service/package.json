@@ -17,6 +17,7 @@
     "@opentelemetry/instrumentation-http": "^0.301.2",
     "@opentelemetry/instrumentation-undici": "^0.35.1",
     "@opentelemetry/sdk-node": "^0.301.2",
+    "@prometheus-io/client": "^0.16.1",
     "amqplib": "^2.4.0",
     "express": "^5.2.1",
     "jose": "^5.10.0",

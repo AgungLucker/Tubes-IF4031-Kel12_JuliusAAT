@@ -11,3 +11,20 @@ spec:
       port: 8080
       targetPort: 8080
   type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service-metrics
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: client-service
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

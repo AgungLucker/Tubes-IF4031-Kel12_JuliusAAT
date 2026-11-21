@@ -262,7 +262,8 @@ services:
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # Run as the rabbitmq user to prevent root-owned .erlang.cookie files, which can cause server startup failures (EACCES).
+      test: ["CMD", "gosu", "rabbitmq", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
       retries: 10

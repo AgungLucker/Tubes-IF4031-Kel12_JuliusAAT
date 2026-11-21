@@ -71,7 +71,12 @@ function publishFieldReports(event, reportId, timeoutMs = 3000) {
     });
 }
 
+function isPublisherReady() {
+    return channel !== null;
+}
+
 module.exports = {
     startPublisher,
-    publishFieldReports
+    publishFieldReports,
+    isPublisherReady
 };
