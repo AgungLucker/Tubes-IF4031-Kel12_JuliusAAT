@@ -48,10 +48,10 @@ images:
     newTag: 68d8fca
   - name: ghcr.io/julius123123/bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
-    newTag: 43c5204
+    newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-token
     newName: ghcr.io/julius123123/bnpb-token
-    newTag: cf3dbe3
+    newTag: 1cb6344
   - name: ghcr.io/julius123123/bnpb-dashboard
     newName: ghcr.io/julius123123/bnpb-dashboard
     newTag: cf3dbe3
