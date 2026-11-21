@@ -5,3 +5,23 @@ scrape_configs:
   - job_name: satellite-processor
     static_configs:
     - targets: ["satellite-processor:8083"]
+  - job_name: aggregator
+    scrape_interval: 5s
+    static_configs:
+    - targets: ["aggregator:8090"]
+  - job_name: client-service
+    scrape_interval: 5s
+    static_configs:
+    - targets: ["client-service:8080"]
+  - job_name: bnpb-token-service
+    scrape_interval: 5s
+    static_configs:
+    - targets: ["bnpb-token-service:8090"]
+  - job_name: consumer-dashboard
+    scrape_interval: 5s
+    static_configs:
+    - targets: ["consumer-dashboard:8101"]
+  - job_name: consumer-notifier
+    scrape_interval: 5s
+    static_configs:
+    - targets: ["consumer-notifier:8102"]
