@@ -90,7 +90,8 @@ async function upsertDetections(client, detections) {
             frp_mw = EXCLUDED.frp_mw,
             disposition = EXCLUDED.disposition,
             fire_id = EXCLUDED.fire_id,
-            feed_offset = EXCLUDED.feed_offset`,
+            feed_offset = EXCLUDED.feed_offset
+        WHERE EXCLUDED.disposition <> 'LATE_REJECTED'`,
         [JSON.stringify(detections)]
     );
 }
@@ -127,10 +128,14 @@ async function getActiveFires() {
     return result.rows;
 }
 
-async function getDetectionKeys() {
-    const result = await pool.query(`SELECT detection_key FROM detections`);
-    return result.rows.map((row) => row.detection_key);
+async function getDetectionKeys(since) {
+    const result = await pool.query(
+        `SELECT detection_key, detected_at FROM detections WHERE detected_at >= $1`,
+        [since]
+    );
+    return result.rows.map((row) => [row.detection_key, new Date(row.detected_at).getTime()]);
 }
+
 
 module.exports = { getCheckpoint, getLastOffset, commitBatch, listFires, getActiveFires, getOpenDetections, getDetectionKeys };
 
