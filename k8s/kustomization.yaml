@@ -43,7 +43,7 @@ images:
     newTag: cf3dbe3
   - name: ghcr.io/julius123123/bnpb-client
     newName: ghcr.io/julius123123/bnpb-client
-    newTag: cf3dbe3
+    newTag: 43c5204
   - name: ghcr.io/julius123123/bnpb-token
     newName: ghcr.io/julius123123/bnpb-token
     newTag: cf3dbe3
@@ -55,7 +55,7 @@ images:
     newTag: cf3dbe3
   - name: ghcr.io/julius123123/bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
-    newTag: cf3dbe3
+    newTag: 43c5204
 
 generatorOptions:
   disableNameSuffixHash: true
