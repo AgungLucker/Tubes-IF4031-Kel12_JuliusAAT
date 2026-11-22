@@ -5,6 +5,8 @@ metadata:
   namespace: sistem-informasi-kebencanaan-bnpb
 spec:
   instances: 2
+  minSyncReplicas: 0
+  maxSyncReplicas: 1
   # Default 30s (3 failed probes x 10s) kills the instance manager while PostgreSQL is
   # still starting on slow VM disks. 300s = 30 failed probes.
   livenessProbeTimeout: 300
@@ -12,7 +14,7 @@ spec:
     storageClass: local-path
     size: 2Gi
   resources:
-    requests: { memory: 256Mi }
+    requests: { memory: 512Mi }
     limits:   { memory: 1Gi }
   inheritedMetadata:
     labels:

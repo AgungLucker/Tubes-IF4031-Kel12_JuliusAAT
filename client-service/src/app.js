@@ -43,7 +43,7 @@ export function createApp({ cfg, keys }) {
 
     app.get('/data', verifyJwt(cfg), prioritize(cfg), shedder.admit, checkSession(cfg), async (req, res) => {
         const fields = resolveFields(req.auth.scope, req.query.fields);
-        const { hazard_type, source } = req.query;
+        const { hazard_type, source, limit, cursor } = req.query;
 
         if (hazard_type !== undefined && !HAZARD_TYPES.has(hazard_type)) {
             throw new HttpError(400, 'invalid_request', `hazard_type must be one of: ${[...HAZARD_TYPES].join(', ')}`);
@@ -51,16 +51,22 @@ export function createApp({ cfg, keys }) {
         if (source !== undefined && !SOURCES.has(source)) {
             throw new HttpError(400, 'invalid_request', `source must be one of: ${[...SOURCES].join(', ')}`);
         }
+        if (limit !== undefined && !/^[1-9]\d{0,3}$/.test(limit)) {
+            throw new HttpError(400, 'invalid_request', 'limit must be a positive integer');
+        }
 
         const params = new URLSearchParams();
         if (hazard_type) params.set('hazard_type', hazard_type);
         if (source) params.set('source', source);
+        // Pagination lintas shard (P1 #2): limit dan cursor buram diteruskan apa adanya.
+        if (limit) params.set('limit', limit);
+        if (cursor) params.set('cursor', cursor);
         const qs = params.size ? `?${params}` : '';
         let r;
 
         try {
             r = await callJson('aggregator', `${cfg.aggregatorUrl}/hazard-events${qs}`, {
-                cid: req.cid, timeoutMs: cfg.upstreamTimeoutMs,
+                cid: req.cid, timeoutMs: cfg.aggregatorTimeoutMs,
                 headers: { 'X-Client-Priority': req.priority },
             });
 
@@ -69,8 +75,15 @@ export function createApp({ cfg, keys }) {
         }
 
         if (r.status === 429) throw new HttpError(429, 'rate_limited', 'Too many requests');
+        if (r.status === 400) throw new HttpError(400, 'invalid_request', r.data?.error?.message ?? 'Invalid request');
 
-        const body = { data: r.data.data.map((row) => project(row, fields)) };
+
+        const body = {
+            data: r.data.data.map((row) => project(row, fields)),
+            next_cursor: r.data.next_cursor ?? null,
+            partial: Boolean(r.data.partial),
+            unavailable_units: r.data.unavailable_units ?? [],
+        };
         if (r.data.stale_since) body.stale_since = r.data.stale_since;
         if (r.data.source_status) body.source_status = r.data.source_status;
         res.set('Cache-Control', 'no-store').json(body);
