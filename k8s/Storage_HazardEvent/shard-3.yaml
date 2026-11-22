@@ -35,7 +35,7 @@ spec:
             matchExpressions:
               - key: kubernetes.io/hostname
                 operator: In
-                values: [node-a]
+                values: [node-d]
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: kubernetes.io/hostname

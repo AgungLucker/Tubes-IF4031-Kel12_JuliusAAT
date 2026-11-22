@@ -12,7 +12,7 @@ spec:
     metadata:
       labels:
         app: satellite-processor
-        role: processor
+        role: consumer
     spec:
       containers:
         - name: satellite-processor
