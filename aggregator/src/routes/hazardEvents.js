@@ -1,6 +1,7 @@
 const express = require("express");
 const { listLatest, HAZARD_TYPES, SOURCES } = require("../store/canonicalStore");
-const { getIngestStatus } = require("../store/ingestStatus");
+const { performance } = require("node:perf_hooks");
+const { getIngestStatusWithAge } = require("../store/ingestStatus");
 const { CursorError } = require("../store/cursor");
 
 const router = express.Router();
@@ -11,10 +12,18 @@ const STALE_THRESHOLD_MS = Number(process.env.POLL_INTERVAL_MS || 3000) * 2;
 // source), never from the sensor itself: the answer is local, fast, and still correct while the
 // sensor is down. Cached for a second so a request burst does not become a query burst.
 const PANTAI_STALE_AFTER_MS = Number(process.env.PANTAI_STALE_AFTER_MS || 15000);
-let statusCache = { at: 0, rows: [] };
+let statusCache = { at: -Infinity, rows: [] };
 async function cachedStatuses() {
-    if (Date.now() - statusCache.at > 1000) statusCache = { at: Date.now(), rows: await getIngestStatus() };
+    if (performance.now() - statusCache.at > 1000) {
+        statusCache = { at: performance.now(), rows: await getIngestStatusWithAge() };
+    }
     return statusCache.rows;
+}
+
+// Umur poll sukses terakhir saat ini = umur menurut DB saat diambil + lama baris itu di cache.
+function ageMs(row) {
+    if (row?.age_ms === null || row?.age_ms === undefined) return null;
+    return Number(row.age_ms) + (performance.now() - statusCache.at);
 }
 
 // "ok" | "stale" | "unknown", plus the time of the last good poll, for the sensor-dependent part
@@ -24,7 +33,7 @@ async function sensorStatus() {
         const row = (await cachedStatuses()).find((s) => s.source === "SENSOR_PANTAI");
         if (!row?.last_success_at) return { status: "unknown" };
         const last = new Date(row.last_success_at);
-        return Date.now() - last.getTime() > PANTAI_STALE_AFTER_MS
+        return ageMs(row) > PANTAI_STALE_AFTER_MS
             ? { status: "stale", stale_since: last.toISOString() }
             : { status: "ok", last_success_at: last.toISOString() };
     } catch {
@@ -38,7 +47,7 @@ async function staleSince() {
         const pvmbg = statuses.find((s) => s.source === "PVMBG");
         if (!pvmbg?.last_success_at) return undefined;
         const last = new Date(pvmbg.last_success_at);
-        return Date.now() - last.getTime() > STALE_THRESHOLD_MS ? last.toISOString() : undefined;
+        return ageMs(pvmbg) > STALE_THRESHOLD_MS ? last.toISOString() : undefined;
     } catch (err) {
         console.error(`[hazard-events] status ingest tidak terbaca: ${err.message}`);
         return undefined;

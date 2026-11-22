@@ -21,6 +21,17 @@ async function getIngestStatus() {
     return rows;
 }
 
+// Sama seperti getIngestStatus, ditambah umur poll sukses terakhir (age_ms) yang dihitung dengan
+// jam DB ingest -- jam yang sama yang mengisi last_success_at -- sehingga hasilnya tidak
+// terpengaruh jam pod aggregator yang bergeser.
+async function getIngestStatusWithAge() {
+    const { rows } = await pool.query(
+        `SELECT *, (EXTRACT(EPOCH FROM (now() - last_success_at)) * 1000)::float8 AS age_ms
+           FROM ingest_status`
+    );
+    return rows;
+}
+
 async function getCursor(source) {
     const { rows } = await pool.query("SELECT last_cursor FROM ingest_status WHERE source = $1", [source]);
     return rows[0]?.last_cursor || new Date(0).toISOString();
@@ -66,4 +77,4 @@ async function getRawCursor(source) {
     return rows[0]?.last_cursor ?? null;
 }
 
-module.exports = { getIngestStatus, getCursor, getRawCursor, markPollSuccess, markPollError, pool, leases };
+module.exports = { getIngestStatus, getIngestStatusWithAge, getCursor, getRawCursor, markPollSuccess, markPollError, pool, leases };
