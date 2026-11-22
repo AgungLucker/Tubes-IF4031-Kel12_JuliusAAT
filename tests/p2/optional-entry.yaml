@@ -1,0 +1,33 @@
+# OPSIONAL, TIDAK diterapkan otomatis oleh skrip mana pun.
+# Dipakai hanya bila k6 dijalankan dari LUAR klaster (mis. dari laptop host yang RAM-nya besar, karena
+# 10.000 VU butuh 10-20 GB). Membuka client-service lewat NodePort 30080 pada semua node dan mengizinkan
+# trafik masuk dari luar (default-deny-ingress di namespace ini memblokirnya).
+#
+#   kubectl apply -f tests/p2/optional-entry.yaml
+#   # dari mesin lain yang bisa menjangkau node (mis. lewat Tailscale):
+#   k6 run -e MODE=client -e BASE=http://<ip-node>:30080 -e TOKEN_URL=<token-service> ... tests/p2/k6/aggregator-load.js
+#   kubectl delete -f tests/p2/optional-entry.yaml            # cabut setelah selesai
+#
+# Catatan: token-service tidak dibuka di sini (login klien tetap lewat jalur internal). Untuk k6 dari luar,
+# tambahkan NodePort token-service serupa atau gunakan token JWT yang sudah didapat.
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service-nodeport
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  type: NodePort
+  selector: {app: client-service}
+  ports: [{name: http, port: 8080, targetPort: 8080, nodePort: 30080}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-to-client-service
+  namespace: sistem-informasi-kebencanaan-bnpb
+spec:
+  podSelector: {matchLabels: {app: client-service}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ipBlock: {cidr: 0.0.0.0/0}}]
+      ports: [{protocol: TCP, port: 8080}]
