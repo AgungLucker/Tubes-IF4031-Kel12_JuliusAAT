@@ -60,7 +60,7 @@ images:
     newTag: d6bd10d
   - name: ghcr.io/julius123123/bnpb-satellite-processor
     newName: ghcr.io/julius123123/bnpb-satellite-processor
-    newTag: 1cb6344
+    newTag: 30bdba7
 
 generatorOptions:
   disableNameSuffixHash: true
