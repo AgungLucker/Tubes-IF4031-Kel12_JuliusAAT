@@ -15,5 +15,9 @@ export function loadConfig(env = process.env) {
     maxInflight: parseInt(env.CLIENT_MAX_INFLIGHT || "200", 10),
     mediaShare: parseFloat(env.CLIENT_MEDIA_SHARE || "0.6"),
     upstreamTimeoutMs: parseInt(env.UPSTREAM_TIMEOUT_MS || '3000', 10),
+    // Khusus panggilan baca ke aggregator: saat satu shard mati, aggregator bisa butuh beberapa
+    // detik (timeout koneksi/query ke primary + fallback ke replika) sebelum menjawab partial:true.
+    // Harus lebih besar dari waktu terburuk itu, agar client menerima jawaban sebagian, bukan 503.
+    aggregatorTimeoutMs: parseInt(env.AGGREGATOR_TIMEOUT_MS || '10000', 10),
   };
 }
