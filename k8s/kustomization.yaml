@@ -51,7 +51,7 @@ images:
     newTag: b3dca01
   - name: ghcr.io/julius123123/bnpb-token
     newName: ghcr.io/julius123123/bnpb-token
-    newTag: 1cb6344
+    newTag: cf3dbe3
   - name: ghcr.io/julius123123/bnpb-dashboard
     newName: ghcr.io/julius123123/bnpb-dashboard
     newTag: d6bd10d
