@@ -1,13 +1,14 @@
 set -euo pipefail
 NS=sistem-informasi-kebencanaan-bnpb
 
-counts() { 
-  local nodes; nodes=$(kubectl get nodes --no-headers | awk '$2 ~ /^Ready/ {print $1}')
-  for n in $nodes; do
-    c=$(kubectl -n $NS get pods -l role=store --field-selector spec.nodeName="$n" --no-headers 2>/dev/null | wc -l | tr -d ' ')
-    echo "$c $n"
-  done | sort -n
-}
+ counts() {
+   local nodes; nodes=$(kubectl get nodes --no-headers | awk '$2 ~ /^Ready/ {print $1}')
+   for n in $nodes; do
+-    c=$(kubectl -n $NS get pods -l role=store --field-selector spec.nodeName="$n" --no-headers 2>/dev/null | wc -l | tr -d ' ')
++    c=$(kubectl -n $NS get pods -l group=hazardevent --field-selector spec.nodeName="$n" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+     echo "$c $n"
+   done | sort -n
+ }
 
 wait_healthy() {
   for c in $(kubectl -n $NS get clusters -o name); do
